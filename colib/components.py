@@ -1,15 +1,12 @@
 from collections import namedtuple
+import heapq
 from Bio.Seq import Seq
 import six
-from colib.mutations import TranslationTable
+from colib.mutations import TranslationTable, OverlapException
 from colib.sequence import Sequence
 
 
 def diff(original, other):
-    pass
-
-
-class OverlapException(Exception):
     pass
 
 
@@ -27,21 +24,37 @@ class _FeatureList(object):
     def find(self, *args, **kwargs):
         pass
 
-    def add(self, position, size, type=None, name=None, attributes=None, link=None):
-        feature = _Feature(self._component, position, size, type, name, attributes, link)
+    def add(self, position, size, type=None, name=None, attributes=None, link=None, broken=None):
+        if attributes:
+            attributes = frozenset(attributes.items())
+        feature = _Feature(self._component, position, size, type, name, attributes, link, broken)
         self._features.add(feature)
         return feature
 
     def remove(self, feature):
         """
         """
-        self._removed_features.add(feature)
+        if feature in self._features:
+            self._features.remove(feature)
+        elif self._inherits:
+            self._removed_features.add(feature)
+        else:
+            raise KeyError(feature)
+
+    @staticmethod
+    def _translate_feature(component, feature):
+        return _Feature(component, component._mutations_tt[feature.position], *feature[2:])
 
     def __iter__(self):
-        # sorted iteration over this list and the inherited list, automatically translating feature
-        # positions from any inherited tables, excluding any in removed_features list.
-        # TODO cache support for feature ids & positions.
-        pass
+        if self._inherits:  # NOTE: this is where caching should kick in on any inherited implementation.
+            keep_features = (f for f in self._inherits if f not in self._removed_features)
+            translated_features = (self._translate_feature(self._component, f) for f in keep_features)
+
+            for f in heapq.merge(sorted(self._features), translated_features):
+                yield f
+        else:
+            for f in sorted(self._features):
+                yield f
 
 
 class Component(Sequence):
@@ -66,6 +79,9 @@ class Component(Sequence):
         self._ancestor = ancestor
         self._sequence = sequence
         self._storage = storage
+        self._mutations = ()
+        self._mutations_tt = TranslationTable.from_mutations(self.sequence, self._mutations)
+
         self.features = _FeatureList(self, inherit=self._ancestor.features if self._ancestor else None)
 
     @classmethod
@@ -105,7 +121,6 @@ class Component(Sequence):
         return Component(self._sequence,
                          ancestor=self,
                          storage=self._storage)
-
 
     def mutate(self, mutations, strict=True, clone=True):
         """
@@ -160,6 +175,7 @@ class Component(Sequence):
             # TODO strict mode implementation that also fires on other overlaps.
 
             # TODO features.
+            affected_features = self.features.intersect(mutation.start, mutation.size)
 
             if translated_start is None:
                 raise OverlapException()
@@ -185,7 +201,8 @@ class Component(Sequence):
         # TODO features
 
         component._sequence = sequence.toseq()
-        component._ancestor_mutations = tuple(resolved_mutations)
+        component._mutations = tuple(resolved_mutations)
+        component._mutations_tt = tt
         return component
 
     def inherits(self, other):
@@ -212,8 +229,8 @@ class Component(Sequence):
         return diff(self, other)
 
 
-class _Feature(namedtuple('Feature', ['component', 'position', 'size', 'type', 'name', 'attributes', 'link'])):
-    __slots__ = ()
+class _Feature(namedtuple('Feature', ['component', 'position', 'size', 'type', 'name', 'attributes', 'link', 'broken'])):
+    __slots__ = ['component', 'position', 'size', 'type', 'name', 'attributes', 'link', 'broken']
 
     @property
     def is_anonymous(self):

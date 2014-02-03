@@ -130,6 +130,41 @@ class ComponentTestCase(unittest.TestCase):
         pass
 
 
+class FeatureTestCase(unittest.TestCase):
+
+    def test_add_features(self):
+        component = Component('GAGAGAGATATAGAGAGA')
+        component.features.add(8, 4, name='tata', attributes={'a': 1})
+        component.features.add(17, 1, name='end')
+        component.features.add(0, 1, name='start')
+
+        self.assertEqual(['start', 'tata', 'end'], [f.name for f in component.features])
+
+    def test_inherit_features(self):
+        component = Component('ABCDEFGHIerrorJKLMNOPQRSTUVXYZ')
+        component.features.add(0, 3, name='abc')
+        component.features.add(9, 5, name='error')
+        component.features.add(6, 6, name='GHI..err')
+        component.features.add(29, 1, name='end')
+
+        mutated = component.mutate([DEL(9, 5)])
+
+        print(mutated.sequence)
+
+        for f in mutated.features:
+            print(f)
+
+        self.assertEqual(None, list(mutated.features))
+
+
+    def test_inherit_features_removed(self):
+        pass
+
+    def test_find_features(self):
+        pass
+
+
+
 class StorageTestCase(unittest.TestCase):
 
     def setUp(self):

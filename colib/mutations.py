@@ -2,6 +2,10 @@ import six
 from colib.sequence import Sequence
 
 
+class OverlapException(Exception):
+    pass
+
+
 class TranslationTable(object):
     """
     Inspired by the UCSC chain format for pairwise alignments.
@@ -17,8 +21,25 @@ class TranslationTable(object):
         self._q_start, self._q_end = 0, size
 
     @classmethod
-    def from_mutations(cls, length, mutations, strict=True):
-        pass
+    def from_mutations(cls, sequence, mutations, strict=True):
+        tt = TranslationTable(len(sequence))
+        resolved_mutations = map(lambda m: m.resolve(sequence), mutations)
+
+        for mutation in resolved_mutations:
+            insert_size = len(mutation.new_sequence)
+            translated_start = tt[mutation.start]
+
+            if translated_start is None:
+                raise OverlapException()
+
+            if insert_size != mutation.size:
+                tt.delete(translated_start, mutation.size)
+                if insert_size != 0:
+                    tt.insert(translated_start, insert_size)
+            else:
+                tt.substitute(translated_start, mutation.size)
+
+        return tt
 
     @classmethod
     def from_sequences(cls, reference, query, algorithm=None):
