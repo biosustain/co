@@ -1,3 +1,4 @@
+from collections import namedtuple
 from Bio.Seq import Seq
 import six
 from colib.mutations import TranslationTable
@@ -6,6 +7,41 @@ from colib.sequence import Sequence
 
 def diff(original, other):
     pass
+
+
+class OverlapException(Exception):
+    pass
+
+
+class _FeatureList(object):
+
+    def __init__(self, component, inherit=None):
+        self._component = component
+        self._features = set()
+        self._removed_features = set()
+        self._inherits = inherit
+
+    def intersect(self, start, end, include_inherited=True):
+        pass
+
+    def find(self, *args, **kwargs):
+        pass
+
+    def add(self, position, size, type=None, name=None, attributes=None, link=None):
+        feature = _Feature(self._component, position, size, type, name, attributes, link)
+        self._features.add(feature)
+        return feature
+
+    def remove(self, feature):
+        """
+        """
+        self._removed_features.add(feature)
+
+    def __iter__(self):
+        # sorted iteration over this list and the inherited list, automatically translating feature
+        # positions from any inherited tables, excluding any in removed_features list.
+        # TODO cache support for feature ids & positions.
+        pass
 
 
 class Component(Sequence):
@@ -21,15 +57,36 @@ class Component(Sequence):
     without destroying descendant objects may be necessary.
     """
 
-    def __init__(self, sequence='', storage=None):
+    def __init__(self, sequence='', ancestor=None, storage=None):
         if isinstance(sequence, six.string_types):
             sequence = Seq(sequence)
 
         # TODO support components without sequence.
 
+        self._ancestor = ancestor
         self._sequence = sequence
         self._storage = storage
-        self.features = set()
+        self.features = _FeatureList(self, inherit=self._ancestor.features if self._ancestor else None)
+
+    @classmethod
+    def from_components(cls, components, copy_features=False):
+        """
+        Joins multiple components together, creating a feature annotation for each.
+
+        .. warning::
+
+            Optionally, features from the old components can be copied into the new component. This is strongly
+            discouraged when working with large components and should only be done when assembling a component from
+            temporary components that will later be discarded. A custom inspection can recursively enumerate features
+            from linked components.
+
+        :param copy_features: When `copy_features` is set, no features with links to the original components will be
+            created.
+        """
+        if copy_features:
+            raise NotImplementedError("Copying features from old components into new ones is not currently supported.")
+
+        # TODO
 
     @property
     def length(self):
@@ -45,7 +102,10 @@ class Component(Sequence):
 
         The copy is linked to the same storage as the original, but is not saved automatically.
         """
-        pass
+        return Component(self._sequence,
+                         ancestor=self,
+                         storage=self._storage)
+
 
     def mutate(self, mutations, strict=True, clone=True):
         """
@@ -73,7 +133,7 @@ class Component(Sequence):
         #     - Mutate the feature to an inexact mapping.
         #
         # Mutations are applied in order based on the original coordinate system. If `strict=True` and multiple
-        # mutations affect the same area, an `OverlapError` is raised.
+        # mutations affect the same area, an `OverlapException` is raised.
         #
         # Anonymous features are merged by default.
         #
@@ -83,33 +143,50 @@ class Component(Sequence):
         # :raises: OverlapError
         #
         # """
-
         component = self.clone() if clone else self
         sequence = self._sequence.tomutable()
         tt = TranslationTable(self.length)
 
-        for mutation in mutations:
+        resolved_mutations = map(lambda m: m.resolve(self.sequence), mutations)
+
+        for mutation in resolved_mutations:
             # translate mutations, apply.
             # catch strict errors
             # flag features as edited/changed (copies are created as this happens), deleted.
 
-            # TODO check if mutation is within original table.
+            insert_size = len(mutation.new_sequence)
+            translated_start = tt[mutation.start]
 
-            # deletion if new_sequence == None
-            # deletion, followed by insertion if size > 1
-            if mutation.new_sequence is None or mutation.size != 1:
-                tt.delete(tt[mutation.start], mutation.size)
+            # TODO strict mode implementation that also fires on other overlaps.
 
-            if len(mutation.new_sequence) > 1:  # insertion
-                # FIXME raises TypeError if mutation.start is out of bounds
-                # TODO unit tests for edge cases
-                tt.insert(tt[mutation.start] + 1, len(mutation.new_sequence) - 1)
-            else:  # substitution when size == 1 and len(new_sequence) == 1
-                tt.substitute(tt[mutation.start], 1)
+            # TODO features.
 
+            if translated_start is None:
+                raise OverlapException()
 
-            # TODO sequence[] =
-            # TODO features ..
+            if insert_size != mutation.size:
+                del sequence[translated_start:translated_start + mutation.size]
+                tt.delete(translated_start, mutation.size)
+
+                if insert_size != 0:  # insertion or DELINS
+                    sequence = sequence[:translated_start] + mutation.new_sequence + sequence[translated_start:]
+                    tt.insert(translated_start, insert_size)
+
+            else:  # substitution
+                if mutation.size == 1:  # SNP
+                    sequence[translated_start] = mutation.new_sequence
+                else:
+                    sequence = sequence[:translated_start]\
+                        + mutation.new_sequence\
+                        + sequence[translated_start + insert_size:]
+
+                tt.substitute(translated_start, mutation.size)
+
+        # TODO features
+
+        component._sequence = sequence.toseq()
+        component._ancestor_mutations = tuple(resolved_mutations)
+        return component
 
     def inherits(self, other):
         """
@@ -118,6 +195,7 @@ class Component(Sequence):
         """
         raise NotImplementedError
 
+    # noinspection PyProtectedMember
     def diff(self, other):
         """
         Returns the list of mutations that represent the difference between this component and another.
@@ -134,16 +212,12 @@ class Component(Sequence):
         return diff(self, other)
 
 
-class _Feature(Sequence):
-    def __init__(self, component, start, end, type, properties):
-        pass
+class _Feature(namedtuple('Feature', ['component', 'position', 'size', 'type', 'name', 'attributes', 'link'])):
+    __slots__ = ()
 
+    @property
     def is_anonymous(self):
-        pass
+        return self.type is None
 
-    def identical_to(self, other):
-        """
-        Two features are identical if their sequence (and therefore length) is identical and their annotation
-        is the same.
-        """
-        raise NotImplementedError
+    def __gt__(self, other):
+        return self.position > other.position

@@ -82,7 +82,7 @@ class TranslationTable(object):
             # print 'chain:', (ungapped_size, dr, dq)
             # print (ungapped_size, dr, dq, query_offset, position, offset)
             # print position < offset + ungapped_size, position < offset + ungapped_size + dq
-            if position < offset + ungapped_size:  # target position is in this ungapped block
+            if position <= offset + ungapped_size:  # target position is in this ungapped block
                 return query_offset + (position - offset)
             elif position < offset + ungapped_size + dq:
                 return None  # position falls into a gap in the query sequence.
@@ -107,12 +107,17 @@ class TranslationTable(object):
 class Mutation(object):
     """
 
-    DelIns does not have its own native Mutation class. These are best implemented in
+    DELINS does not have its own native Mutation class. These are best implemented in
     third-party libraries or using Mutation directly.
+
+    A Mutation(start, end, new_sequence) is similar to the two derived mutations which however
+    do not account for substitutions::
+
+        DEL(start, end - start + 1), INS(start, new_sequence, replace=True)
 
     """
     def __init__(self, start, end, new_sequence=''):
-        assert start >= end
+        assert start <= end
         assert isinstance(new_sequence, (six.string_types, Sequence))
         self._start = start
         self._end = end
@@ -149,7 +154,10 @@ class Mutation(object):
     def is_insertion(self):
         return len(self.new_sequence) > 0
 
-    def context(self):
+    def resolve(self, reference_sequence=None):
+        return self
+
+    def context(self, reference_sequence):
         """
         The context of a mutation returns a description of possible feature annotations or parts that were used to
         create the mutation. The context is used to create human-readable feedback.
@@ -177,6 +185,54 @@ class DEL(Mutation):
         super(DEL, self).__init__(pos, pos + size - 1)
 
 
-class INS(Mutation):
-    def __init__(self, pos, new_sequence):
-        super(INS, self).__init__(pos, pos, new_sequence)
+class _ComplexMutation(object):
+
+    def resolve(self, reference_sequence):
+        raise NotImplementedError()
+
+    def context(self, reference_sequence):
+        """
+        If the `context` is `None`, infer context from the resolved sequence.
+        """
+        return self.resolve(reference_sequence).context()
+
+
+class INS(_ComplexMutation):
+    """
+
+    .. note::
+
+        :class:`INS` works differently than other types, such as `DEL` and `SUB` in that the sequence is not a
+        replacement sequence but an insertion sequence. The original nucleotide at the insertion site does not
+        have to be repeated.
+
+        Insertions are typically represented by a pair of positions between which the new sequence is
+        inserted. The :class:`INS` class has only a single positional argument that refers to the second of the two
+        positions. An insertion `INS(15, 'G')` is equivalent to _14_15insG_.
+
+    """
+    def __init__(self, pos, insert_sequence, replace=False):
+        self._pos = pos
+        self._insert_sequence = insert_sequence
+        self._replace = replace
+
+    def resolve(self, reference_sequence):
+        if self._replace:  # base case:
+            return Mutation(self._pos, self._pos, self._insert_sequence)
+        if self._pos == 0:
+            return Mutation(0, 0, self._insert_sequence + reference_sequence[self._pos])
+        else:
+            return Mutation(self._pos - 1, self._pos - 1, reference_sequence[self._pos - 1] + self._insert_sequence)
+
+
+# class DUP(_ComplexMutation):
+#     def __init__(self, pos, size):
+#         assert size >= 1
+#         self._pos = pos
+#         self._size = size
+#
+#     def resolve(self, reference_sequence):
+#         return SUB(self._pos, reference_sequence[self._pos:self._pos + self._size])
+#
+#     def context(self):
+#         pass
