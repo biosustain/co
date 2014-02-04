@@ -103,7 +103,8 @@ class TranslationTable(object):
             # print 'chain:', (ungapped_size, dr, dq)
             # print (ungapped_size, dr, dq, query_offset, position, offset)
             # print position < offset + ungapped_size, position < offset + ungapped_size + dq
-            if position <= offset + ungapped_size:  # target position is in this ungapped block
+            if position < offset + ungapped_size:  # target position is in this ungapped block
+                # FIXME the <= is wrong, but necessary. The worst kind of wrong.
                 return query_offset + (position - offset)
             elif position < offset + ungapped_size + dq:
                 return None  # position falls into a gap in the query sequence.
@@ -136,31 +137,38 @@ class Mutation(object):
 
         DEL(start, end - start + 1), INS(start, new_sequence, replace=True)
 
+    Mutation are stored as (position, size) pairs because (start, end) pairs do not allow for a proper zero-length
+    mutation as it would be seen in an insertion. It is possible to simulate an insertion by keeping one character of
+    the original sequence, but that would add ambiguity to the exact site of the mutated sequence.
+
     """
-    def __init__(self, start, end, new_sequence=''):
-        assert start <= end
+    def __init__(self, position, size, new_sequence=''):
         assert isinstance(new_sequence, (six.string_types, Sequence))
-        self._start = start
-        self._end = end
+        self._position = position
+        self._size = size
         self._new_sequence = new_sequence
 
     @property
-    def start(self):
-        return int(self._start)
+    def position(self):
+        return int(self._position)
 
     @property
-    def end(self):
-        return int(self._end)
+    def start(self):
+        return self.position
+
+    @property
+    def end(self): # FIXME *dangerous* needs review.
+        if self.size in (0, 1):
+            return self.position
+        return self.position + self.size - 1
 
     @property
     def size(self):
-        """
-        .. note::
+        return int(self._size)
 
-            This method is called size, not length, as it applies to the length of the deleted sequence for which there
-            is no iterable.
-        """
-        return self._end - self._start + 1
+    @property
+    def new_size(self):
+        return len(self.new_sequence)
 
     @property
     def new_sequence(self):
@@ -173,26 +181,26 @@ class Mutation(object):
         return self.size > len(self.new_sequence)
 
     def is_insertion(self):
-        return len(self.new_sequence) > 0
+        return not self.is_substitution() and len(self.new_sequence) > 0
 
-    def resolve(self, reference_sequence=None):
-        return self
-
-    def context(self, reference_sequence):
+    def context(self):
         """
         The context of a mutation returns a description of possible feature annotations or parts that were used to
         create the mutation. The context is used to create human-readable feedback.
         """
         return dict(
-            start=repr(self.start),
-            end=repr(self.end),
+            position=repr(self.position),
+            size=repr(self.size),
             new_sequence=repr(self.new_sequence)  # FIXME sequence representation only if it is a Sequence object.
         )
+
+    def __repr__(self):
+        return '<Mutation: change {}({}) to "{}">'.format(self._position, self._size, self._new_sequence)
 
 
 class SUB(Mutation):
     def __init__(self, pos, new_sequence):
-        super(SUB, self).__init__(pos, pos + len(new_sequence) - 1, new_sequence)
+        super(SUB, self).__init__(pos, len(new_sequence), new_sequence)
 
 
 class SNP(SUB):
@@ -203,57 +211,13 @@ class SNP(SUB):
 
 class DEL(Mutation):
     def __init__(self, pos, size=1):
-        super(DEL, self).__init__(pos, pos + size - 1)
+        super(DEL, self).__init__(pos, size)
 
 
-class _ComplexMutation(object):
-
-    def resolve(self, reference_sequence):
-        raise NotImplementedError()
-
-    def context(self, reference_sequence):
+class INS(Mutation):
+    def __init__(self, pos, new_sequence, replace=False):
         """
-        If the `context` is `None`, infer context from the resolved sequence.
+        :param replace: if `True`, eliminates the original character at the position. Some variant call formats keep
+            the first character of the original sequence in the replacement sequence.
         """
-        return self.resolve(reference_sequence).context()
-
-
-class INS(_ComplexMutation):
-    """
-
-    .. note::
-
-        :class:`INS` works differently than other types, such as `DEL` and `SUB` in that the sequence is not a
-        replacement sequence but an insertion sequence. The original nucleotide at the insertion site does not
-        have to be repeated.
-
-        Insertions are typically represented by a pair of positions between which the new sequence is
-        inserted. The :class:`INS` class has only a single positional argument that refers to the second of the two
-        positions. An insertion `INS(15, 'G')` is equivalent to _14_15insG_.
-
-    """
-    def __init__(self, pos, insert_sequence, replace=False):
-        self._pos = pos
-        self._insert_sequence = insert_sequence
-        self._replace = replace
-
-    def resolve(self, reference_sequence):
-        if self._replace:  # base case:
-            return Mutation(self._pos, self._pos, self._insert_sequence)
-        if self._pos == 0:
-            return Mutation(0, 0, self._insert_sequence + reference_sequence[self._pos])
-        else:
-            return Mutation(self._pos - 1, self._pos - 1, reference_sequence[self._pos - 1] + self._insert_sequence)
-
-
-# class DUP(_ComplexMutation):
-#     def __init__(self, pos, size):
-#         assert size >= 1
-#         self._pos = pos
-#         self._size = size
-#
-#     def resolve(self, reference_sequence):
-#         return SUB(self._pos, reference_sequence[self._pos:self._pos + self._size])
-#
-#     def context(self):
-#         pass
+        super(INS, self).__init__(pos, int(replace), new_sequence)
