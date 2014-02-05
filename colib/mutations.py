@@ -69,6 +69,7 @@ class TranslationTable(object):
                 self._chain[i + 1] = (ungapped_size - gap_offset, dr, dq)
 
                 # TODO change _r_end, _q_end
+                self._query_size += reference_gap - query_gap
                 return
             offset += ungapped_size + dr # NOTE might be dq
 
@@ -80,6 +81,34 @@ class TranslationTable(object):
 
     def substitute(self, position, size):
         self._insert_gap(position, size, size)
+
+    @property
+    def reference_size(self):
+        return self._reference_size
+
+    @property
+    def query_size(self):
+        return self._query_size
+
+    def le(self, position): # FIXME horrible le implementation.
+        """
+        :returns: the first position, equal or lower than `position` that exists in the query sequence.
+        """
+        while True:
+            query_position = self[position]
+            if query_position is not None:
+                return query_position
+            position -= 1
+
+    def ge(self, position): # FIXME horrible ge implementation.
+        """
+        :returns: the first position, equal or greater than `position` that exists in the query sequence.
+        """
+        while True:
+            query_position = self[position]
+            if query_position is not None:
+                return query_position
+            position += 1
 
     def __getitem__(self, position):
         """
@@ -104,7 +133,7 @@ class TranslationTable(object):
             # print (ungapped_size, dr, dq, query_offset, position, offset)
             # print position < offset + ungapped_size, position < offset + ungapped_size + dq
             if position < offset + ungapped_size:  # target position is in this ungapped block
-                # FIXME the <= is wrong, but necessary. The worst kind of wrong.
+                # FIXME the <= is wrong, but necessary for some tests to work. The worst kind of wrong.
                 return query_offset + (position - offset)
             elif position < offset + ungapped_size + dq:
                 return None  # position falls into a gap in the query sequence.
@@ -112,10 +141,6 @@ class TranslationTable(object):
             query_offset += ungapped_size + dr
             offset += ungapped_size + dq
             # print
-
-
-
-
 
         return 0
 
@@ -181,7 +206,7 @@ class Mutation(object):
         return self.size > len(self.new_sequence)
 
     def is_insertion(self):
-        return not self.is_substitution() and len(self.new_sequence) > 0
+        return not self.is_substitution() and self.new_size > 0
 
     def context(self):
         """
@@ -195,7 +220,12 @@ class Mutation(object):
         )
 
     def __repr__(self):
-        return '<Mutation: change {}({}) to "{}">'.format(self._position, self._size, self._new_sequence)
+        if self.is_insertion() and self.size == 0:
+            return '<Mutation: at {} insert "{}">'.format(self.position, self.new_sequence)
+        elif self.is_deletion() and self.new_size == 0:
+            return '<Mutation: delete {}({})>'.format(self.position, self.size)
+        else:
+            return '<Mutation: change {}({}) to "{}">'.format(self.position, self.size, self.new_sequence)
 
 
 class SUB(Mutation):
