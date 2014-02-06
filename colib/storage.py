@@ -1,7 +1,7 @@
 from bisect import insort_left
 
 
-class Collection(object):
+class _StorageCollection(object):
 
     def __init__(self):
         self._item_list = []
@@ -32,8 +32,8 @@ class Storage(object):
     A library takes care of loading and storing components. A component retrieved from the library may be lazily loaded.
 
     """
-    components = Collection()
-    organisms = Collection()
+    components = _StorageCollection()
+    organisms = _StorageCollection()
 
     def add_component(self, component):
         """

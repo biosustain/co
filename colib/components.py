@@ -10,6 +10,7 @@ from colib.mutations import TranslationTable, OverlapException
 from colib.sequence import Sequence
 from colib.utils import SortedCollection
 
+FORWARD_STRAND, REVERSE_STRAND = 1, -1
 
 def diff(original, other):
     if original.precursor == other:
@@ -91,7 +92,7 @@ class Component(Sequence):
     without destroying descendant objects may be necessary.
     """
 
-    def __init__(self, sequence='', inherits=None, storage=None):
+    def __init__(self, sequence='', inherits=None, storage=None, meta=None):
         if isinstance(sequence, six.string_types):
             sequence = Seq(sequence)
 
@@ -104,6 +105,7 @@ class Component(Sequence):
         self._mutations_tt = TranslationTable.from_mutations(self.sequence, self._mutations)
 
         self.features = _FeatureList(self, inherit=self._inherits.features if self._inherits else None)
+        self.meta = meta or {}
 
 
     @classmethod
@@ -350,13 +352,14 @@ class Component(Sequence):
 
 class _Feature(object):
 
-    def __init__(self, component, position, size, type=None, name=None, attributes=None, link=None, broken_link=False):
+    def __init__(self, component, position, size, type=None, name=None, qualifiers=None, strand=FORWARD_STRAND, link=None, broken_link=False):
         self._component = component
         self._position = position
         self._size = size
         self._type = type
         self._name = name
-        self._attributes = attributes or {}
+        self._strand = strand
+        self._qualifiers = qualifiers or {}
         self._link = link
         self._broken_link = broken_link
 
@@ -365,6 +368,7 @@ class _Feature(object):
     size = property(fget=attrgetter('_size'))
     type = property(fget=attrgetter('_type'))
     name = property(fget=attrgetter('_name'))
+    strand = property(fget=attrgetter('_strand'))
     link = property(fget=attrgetter('_link'))
     link_is_broken = property(fget=attrgetter('_link_is_broken'))
 
@@ -378,7 +382,7 @@ class _Feature(object):
                         size,
                         self._type,
                         self._name,
-                        self._attributes,
+                        self._qualifiers,
                         self._link,
                         self._broken_link)
 
@@ -397,8 +401,8 @@ class _Feature(object):
         return self._component.sequence[self.start:self.end + 1]
 
     @property
-    def attributes(self):
-        return self._attributes.copy()
+    def qualifiers(self):
+        return self._qualifiers.copy()
 
     def is_anonymous(self):
         return self._type is None

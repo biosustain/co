@@ -146,7 +146,7 @@ class FeatureTestCase(unittest.TestCase):
 
     def test_add_features(self):
         component = Component('GAGAGAGATATAGAGAGA')
-        component.features.add(8, 4, name='tata', attributes={'a': 1})
+        component.features.add(8, 4, name='tata', qualifiers={'a': 1})
         component.features.add(17, 1, name='end')
         component.features.add(0, 1, name='start')
 
