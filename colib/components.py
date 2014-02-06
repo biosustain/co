@@ -280,12 +280,12 @@ class Component(Sequence):
                         logging.debug('MFFM feature removed')
 
             logging.debug('applying mutation: at %s("%s") translating from %s("%s") delete %s bases and insert "%s"',
-                            translated_start,
-                            sequence[translated_start],
-                            mutation.start,
-                            self.sequence[mutation.start],
-                            mutation.size,
-                            mutation.new_sequence)
+                          translated_start,
+                          sequence[translated_start],
+                          mutation.start,
+                          self.sequence[mutation.start],
+                          mutation.size,
+                          mutation.new_sequence)
 
             # apply mutation to sequence:
             if mutation.new_size != mutation.size:  # insertion, deletion or delins
@@ -397,9 +397,7 @@ class _Feature(object):
 
     @property
     def end(self):
-        try:
-            return self._position + self._size - 1
-        except: return None
+        return self._position + self._size - 1
 
     @property
     def sequence(self):

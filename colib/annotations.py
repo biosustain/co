@@ -14,7 +14,7 @@ class Annotation(object):
     def translate(self, from_component, to_component):
         pass
 
-    def to_feature(self, component):
+    def as_feature(self, component):
         pass
 
 

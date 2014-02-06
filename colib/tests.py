@@ -300,15 +300,14 @@ class GenbankConverterTestCase(unittest.TestCase):
         )
 
         feature_0 = list(component.features)[0]
-        feature_2 = list(component.features)[2]  # minus strand
-        feature_15 = list(component.features)[15]
+        feature_2 = list(component.features)[2]    # minus strand
+        feature_15 = list(component.features)[15]  # minus strand
 
         self.assertEqual('TTGACA', str(feature_0.sequence))
         self.assertEqual('TAAACT', str(feature_2.sequence))
         self.assertEqual('ATGAGTATTCAACATTTCCGTGTCGCCC'
                          'TTATTCCCTTTTTTGCGGCATTTTGCCT'
                          'TCCTGTTTTTGCT', str(feature_15.sequence))
-
 
     def test_export(self):
         component = Component(Seq('TATAGAGACACA', DNAAlphabet()), meta={'accession': 'MB1'})

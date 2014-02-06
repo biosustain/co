@@ -1,5 +1,6 @@
 """
-
-ANnotated COmponent library
-
+COmponent LIbrary
+=================
 """
+
+__all__ = ()
