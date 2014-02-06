@@ -1,0 +1,171 @@
+LOCUS       pBR322   4196 bp ds-DNA     circular     15-JAN-2014
+DEFINITION  .
+COMMENT     Cloning vector [pBR322](http://en.wikipedia.org/wiki/PBR322),      
+            complete sequence - one of the first widely used E. coli cloning
+            vectors, created in 1977.
+COMMENT     
+COMMENT     > pBR322 is 4361 base pairs in length and contains the replicon of 
+            plasmid pMB1, the _amp<sup>R</sup>_ gene, encoding the ampicillin
+            resistance protein (source plasmid RSF2124) and the
+            _tet<sup>R</sup>_ gene, encoding the tetracycline resistance
+            protein (source plasmid pSC101).
+COMMENT     
+COMMENT     > The plasmid has unique restriction sites for more than forty     
+            restriction enzymes. 11 of these 40 sites lie within the
+            _tet<sup>R</sup>_ gene. There are 2 sites for restriction enzymes
+            HindIII and ClaI within the promoter of the _tet<sup>R</sup>_ gene.
+            There are 6 key restriction sites inside the _amp<sup>R</sup>_
+            gene. The origin of replication or ori site in this plasmid is pMB1
+            (a close relative of ColE1).
+COMMENT     
+COMMENT     > <small>via                                                       
+            [Wikipedia](http://en.wikipedia.org/wiki/PBR322)</small>
+FEATURES             Location/Qualifiers
+     -10_signal      complement(44..49)
+                     /label="P1 promoter (-10 signal)"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+     -35_signal      complement(64..75)
+                     /label="P1 promoter (-35 signal)"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+     misc_RNA        2811..2918
+                     /label="RNAI Transcript"
+                     /ApEinfo_revcolor=#f9ad81
+                     /ApEinfo_fwdcolor=#f9ad81
+     -35_signal      2775..2780
+                     /label="RNAI promoter (-35 signal)"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+     -35_signal      complement(4053..4058)
+                     /label="bla (P3) promoter (-35 signal)"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+     RBS             1740..1744
+                     /label="rop RBS"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+     RBS             complement(3996..4000)
+                     /label="bla RBS"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+     rep_origin      complement(2369..2957)
+                     /label="pMB1 ori"
+                     /ApEinfo_revcolor=#6ecff6
+                     /ApEinfo_fwdcolor=#6ecff6
+     CDS             86..1276
+                     /label="tetR CDS"
+                     /ApEinfo_revcolor=#a187be
+                     /ApEinfo_fwdcolor=#a187be
+     CDS             complement(3128..3988)
+                     /label="bla CDS"
+                     /ApEinfo_revcolor=#a187be
+                     /ApEinfo_fwdcolor=#a187be
+     -10_signal      33..38
+                     /label="tet (p2) promoter (-10 signal)"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+     -35_signal      10..15
+                     /label="tet (p2) promoter (-35 signal)"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+     -10_signal      complement(4032..4037)
+                     /label="bla (P3) promoter (-10 signal)"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+     sig_peptide     complement(3920..3988)
+                     /label="periplasm signal"
+                     /ApEinfo_revcolor=#f49ac2
+                     /ApEinfo_fwdcolor=#f49ac2
+     CDS             1750..1941
+                     /label="rop CDS"
+                     /ApEinfo_revcolor=#a187be
+                     /ApEinfo_fwdcolor=#a187be
+     -35_signal      complement(2952..2957)
+                     /label="RNAII Promoter (-35 signal)"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+     misc_RNA        complement(2369..2921)
+                     /label="RNAII transcript"
+                     /ApEinfo_revcolor=#f9ad81
+                     /ApEinfo_fwdcolor=#f9ad81
+     -10_signal      complement(2931..2936)
+                     /label="RNAII Promoter (-10 signal)"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+     -10_signal      2797..2802
+                     /label="RNAI Promoter (-10 signal)"
+                     /ApEinfo_revcolor=#82ca9d
+                     /ApEinfo_fwdcolor=#82ca9d
+ORIGIN
+        1 TTCTCATGTT TGACAGCTTA TCATCGATAA GCTTTAATGC GGTAGTTTAT CACAGTTAAA
+       61 TTGCTAACGC AGTCAGGCAC CGTGTATGAA ATCTAACAAT GCGCTCATCG TCATCCTCGG
+      121 CACCGTCACC CTGGATGCTG TAGGCATAGG CTTGGTTATG CCGGTACTGC CGGGCCTCTT
+      181 GCGGGATATC GTCCATTCCG ACAGCATCGC CAGTCACTAT GGCGTGCTGC TAGCGCTATA
+      241 TGCGTTGATG CAATTTCTAT GCGCACCCGT TCTCGGAGCA CTGTCCGACC GCTTTGGCCG
+      301 CCGCCCAGTC CTGCTCGCTT CGCTACTTGG AGCCACTATC GACTACGCGA TCATGGCGAC
+      361 CACACCCGTC CTGTGGATCC TCTACGCCGG ACGCATCGTG GCCGGCATCA CCGGCGCCAC
+      421 AGGTGCGGTT GCTGGCGCCT ATATCGCCGA CATCACCGAT GGGGAAGATC GGGCTCGCCA
+      481 CTTCGGGCTC ATGAGCGCTT GTTTCGGCGT GGGTATGGTG GCAGGCCCCG TGGCCGGGGG
+      541 ACTGTTGGGC GCCATCTCCT TGCATGCACC ATTCCTTGCG GCGGCGGTGC TCAACGGCCT
+      601 CAACCTACTA CTGGGCTGCT TCCTAATGCA GGAGTCGCAT AAGGGAGAGC GTCGACCGAT
+      661 GCCCTTGAGA GCCTTCAACC CAGTCAGCTC CTTCCGGTGG GCGCGGGGCA TGACTATCGT
+      721 CGCCGCACTT ATGACTGTCT TCTTTATCAT GCAACTCGTA GGACAGGTGC CGGCAGCGCT
+      781 CTGGGTCATT TTCGGCGAGG ACCGCTTTCG CTGGAGCGCG ACGATGATCG GCCTGTCGCT
+      841 TGCGGTATTC GGAATCTTGC ACGCCCTCGC TCAAGCCTTC GTCACTGGTC CCGCCACCAA
+      901 ACGTTTCGGC GAGAAGCAGG CCATTATCGC CGGCATGGCG GCCGACGCGC TGGGCTACGT
+      961 CTTGCTGGCG TTCGCGACGC GAGGCTGGAT GGCCTTCCCC ATTATGATTC TTCTCGCTTC
+     1021 CGGCGGCATC GGGATGCCCG CGTTGCAGGC CATGCTGTCC AGGCAGGTAG ATGACGACCA
+     1081 TCAGGGACAG CTTCAAGGAT CGCTCGCGGC TCTTACCAGC CTAACTTCGA TCATTGGACC
+     1141 GCTGATCGTC ACGGCGATTT ATGCCGCCTC GGCGAGCACA TGGAACGGGT TGGCATGGAT
+     1201 TGTAGGCGCC GCCCTATACC TTGTCTGCCT CCCCGCGTTG CGTCGCGGTG CATGGAGCCG
+     1261 GGCCACCTCG ACCTGAATGG AAGCCGGCGG CACCTCGCTA ACGGATTCAC CACTCCAAGA
+     1321 ATTGGAGCCA ATCAATTCTT GCGGAGAACT GTGAATGCGC AAACCAACCC TTGGCAGAAC
+     1381 ATATCCATCG CGTCCGCCAT CTCCAGCAGC CGCACGCGGC GCATCTCGGG CAGCGTTGGG
+     1441 TCCTGGCCAC GGGTGCGCAT GATCGTGCTC CTGTCGTTGA GGACCCGGCT AGGCTGGCGG
+     1501 GGTTGCCTTA CCGCAGGATG CTGCTGGCTA CCCTGTGGAA CACCTACATC TGTATTAACG
+     1561 AAGCGCTGGC ATTGACCCTG AGTGATTTTT CTCTGGTCCC GCCGCATCCA TACCGCCAGT
+     1621 TGTTTACCCT CACAACGTTC CAGTAACCGG GCATGTTCAT CATCAGTAAC CCGTATCGTG
+     1681 AGCATCCTCT CTCGTTTCAT CGGTATCATT ACCCCCATGA ACAGAAATCC CCCTTACACG
+     1741 GAGGCATCAG TGACCAAACA GGAAAAAACC GCCCTTAACA TGGCCCGCTT TATCAGAAGC
+     1801 CAGACATTAA CGCTTCTGGA GAAACTCAAC GAGCTGGACG CGGATGAACA GGCAGACATC
+     1861 TGTGAATCGC TTCACGACCA CGCTGATGAG CTTTACCGCA GCTGCCTCGC GCGTTTCGGT
+     1921 GATGACGGTG AAAACCTCTG ACACATGCAG CTCCCGGAGA CGGTCACAGC TTGTCTGTAA
+     1981 GCGGATGCCG GGAGCAGACA AGCCCGTCAG GGCGCGTCAG CGGGTGTTGG CGGGTGTCGG
+     2041 GGCGCAGCCA TGACCCAGTC ACGTAGCGAT AGCGGAGTGT ATACTGGCTT AACTATGCGG
+     2101 CATCAGAGCA GATTGTACTG AGAGTGCACC ATATGCGGTG TGAAATACCG CACAGATGCG
+     2161 TAAGGAGAAA ATACCGCATC AGGCGCTCTT CCGCTTCCTC GCTCACTGAC TCGCTGCGCT
+     2221 CGGTCGTTCG GCTGCGGCGA GCGGTATCAG CTCACTCAAA GGCGGTAATA CGGTTATCCA
+     2281 CAGAATCAGG GGATAACGCA GGAAAGAACA TGTGAGCAAA AGGCCAGCAA AAGGCCAGGA
+     2341 ACCGTAAAAA GGCCGCGTTG CTGGCGTTTT TCCATAGGCT CCGCCCCCCT GACGAGCATC
+     2401 ACAAAAATCG ACGCTCAAGT CAGAGGTGGC GAAACCCGAC AGGACTATAA AGATACCAGG
+     2461 CGTTTCCCCC TGGAAGCTCC CTCGTGCGCT CTCCTGTTCC GACCCTGCCG CTTACCGGAT
+     2521 ACCTGTCCGC CTTTCTCCCT TCGGGAAGCG TGGCGCTTTC TCATAGCTCA CGCTGTAGGT
+     2581 ATCTCAGTTC GGTGTAGGTC GTTCGCTCCA AGCTGGGCTG TGTGCACGAA CCCCCCGTTC
+     2641 AGCCCGACCG CTGCGCCTTA TCCGGTAACT ATCGTCTTGA GTCCAACCCG GTAAGACACG
+     2701 ACTTATCGCC ACTGGCAGCA GCCACTGGTA ACAGGATTAG CAGAGCGAGG TATGTAGGCG
+     2761 GTGCTACAGA GTTCTTGAAG TGGTGGCCTA ACTACGGCTA CACTAGAAGG ACAGTATTTG
+     2821 GTATCTGCGC TCTGCTGAAG CCAGTTACCT TCGGAAAAAG AGTTGGTAGC TCTTGATCCG
+     2881 GCAAACAAAC CACCGCTGGT AGCGGTGGTT TTTTTGTTTG CAAGCAGCAG ATTACGCGCA
+     2941 GAAAAAAAGG ATCTCAAGAA GATCCTTTGA TCTTTTCTAC GGGGTCTGAC GCTCAGTGGA
+     3001 ACGAAAACTC ACGTTAAGGG ATTTTGGTCA TGAGATTATC AAAAAGGATC TTCACCTAGA
+     3061 TCCTTTTAAA TTAAAAATGA AGTTTTAAAT CAATCTAAAG TATATATGAG TAAACTTGGT
+     3121 CTGACAGTTA CCAATGCTTA ATCAGTGAGG CACCTATCTC AGCGATCTGT CTATTTCGTT
+     3181 CATCCATAGT TGCCTGACTC CCCGTCGTGT AGATAACTAC GATACGGGAG GGCTTACCAT
+     3241 CTGGCCCCAG TGCTGCAATG ATACCGCGAG ACCCACGCTC ACCGGCTCCA GATTTATCAG
+     3301 CAATAAACCA GCCAGCCGGA AGGGCCGAGC GCAGAAGTGG TCCTGCAACT TTATCCGCCT
+     3361 CCATCCAGTC TATTAATTGT TGCCGGGAAG CTAGAGTAAG TAGTTCGCCA GTTAATAGTT
+     3421 TGCGCAACGT TGTTGCCATT GCTGCAGGCA TCGTGGTGTC ACGCTCGTCG TTTGGTATGG
+     3481 CTTCATTCAG CTCCGGTTCC CAACGATCAA GGCGAGTTAC ATGATCCCCC ATGTTGTGCA
+     3541 AAAAAGCGGT TAGCTCCTTC GGTCCTCCGA TCGTTGTCAG AAGTAAGTTG GCCGCAGTGT
+     3601 TATCACTCAT GGTTATGGCA GCACTGCATA ATTCTCTTAC TGTCATGCCA TCCGTAAGAT
+     3661 GCTTTTCTGT GACTGGTGAG TACTCAACCA AGTCATTCTG AGAATAGTGT ATGCGGCGAC
+     3721 CGAGTTGCTC TTGCCCGGCG TCAACACGGG ATAATACCGC GCCACATAGC AGAACTTTAA
+     3781 AAGTGCTCAT CATTGGAAAA CGTTCTTCGG GGCGAAAACT CTCAAGGATC TTACCGCTGT
+     3841 TGAGATCCAG TTCGATGTAA CCCACTCGTG CACCCAACTG ATCTTCAGCA TCTTTTACTT
+     3901 TCACCAGCGT TTCTGGGTGA GCAAAAACAG GAAGGCAAAA TGCCGCAAAA AAGGGAATAA
+     3961 GGGCGACACG GAAATGTTGA ATACTCATAC TCTTCCTTTT TCAATATTAT TGAAGCATTT
+     4021 ATCAGGGTTA TTGTCTCATG AGCGGATACA TATTTGAATG TATTTAGAAA AATAAACAAA
+     4081 TAGGGGTTCC GCGCACATTT CCCCGAAAAG TGCCACCTGA CGTCTAAGAA ACCATTATTA
+     4141 TCATGACATT AACCTATAAA AATAGGCGTA TCACGAGGCC CTTTCGTCTT CAAGAA
+//

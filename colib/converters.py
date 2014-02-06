@@ -9,67 +9,67 @@ GENBANK_META_ANNOTATIONS = ('accessions', 'comment', 'gi', 'organism', 'sequence
 
 # TODO look up SO:#-equivalent sequence ontology terms.
 GENBANK_TYPE_SO_TERM_MAP = {
-    '-10_signal': 'SO:0000175',
-    '-35_signal': 'SO:0000176',
-    '3_prime_UTR': 'SO:0000205',
-    '5_prime_UTR': 'SO:0000204',
-    'CAAT_signal': 'SO:0000172',
-    'CDS': 'SO:0000316',
-    'C_region': None,
-    'D-loop': 'SO:0000297',
+    '-10_signal': 'minus_10_signal',
+    '-35_signal': 'minus_35_signal',
+    '3_prime_UTR': 'three_prime_UTR',
+    '5_prime_UTR': 'five_prime_UTR',
+    'CAAT_signal': 'CAAT_signal',
+    'CDS': 'CDS',
+    'C_region': 'C_region',
+    'D-loop': 'D_loop',
     'D_segment': None,
     'GC_signal': None,
     'J_segment': None,
-    'LTR': 'SO:0000286',
+    'LTR': 'LTR',
     'N_region': None,
-    'RBS': 'SO:0000552',
-    'STS': 'SO:0000331',
+    'RBS': 'RBS',
+    'STS': 'STS',
     'S_region': None,
     'TATA_signal': None,
     'V_region': None,
     'V_segment': None,
     'assembly_gap': None,
-    'attenuator': 'SO:0000140',
-    'centromere': 'SO:0000577',
-    'enhancer': 'SO:0000165',
-    'exon': 'SO:0000147',
-    'gap': 'SO:0000730',
-    'gene': 'SO:0000704',
-    'iDNA': 'SO:0000723',
-    'intron': 'SO:0000188',
-    'mRNA': 'SO:0000234',
-    'mat_peptide': 'SO:0000419',
-    'misc_RNA': 'SO:0000356',
+    'attenuator': 'attenuator',
+    'centromere': 'centromere',
+    'enhancer': 'enhancer',
+    'exon': 'exon',
+    'gap': 'gap',
+    'gene': 'gene',
+    'iDNA': 'iDNA',
+    'intron': 'intron',
+    'mRNA': 'mRNA',
+    'mat_peptide': 'mature_protein_region',
+    'misc_RNA': 'RNA',
     'misc_binding': None,
     'misc_difference': None,
     'misc_feature': None,
-    'misc_recomb': 'SO:0000298',
+    'misc_recomb': 'recombination_feature',
     'misc_signal': None,
     'misc_structure': None,
     'mobile_element': None,
-    'modified_base': 'SO:0000305',
-    'ncRNA': 'SO:0000655',
+    'modified_base': 'modified_DNA_base',
+    'ncRNA': 'ncRNA',
     'old_sequence': None,
-    'operon': 'SO:0000178',
-    'oriT': 'SO:0000724',
-    'polyA_signal': 'SO:0000551',
-    'polyA_site': 'SO:0000553',
-    'precursor_RNA': 'SO:0000185',
-    'prim_transcript': 'SO:0000185',
-    'primer_bind': 'SO:0005850',
-    'promoter': 'SO:0000167',
-    'protein_bind': 'SO:0000410',
-    'rRNA': 'SO:0000252',
-    'rep_origin': None,
-    'repeat_region': 'SO:0000657',
-    'sig_peptide': 'SO:0000418',
+    'operon': 'operon',
+    'oriT': 'oriT',
+    'polyA_signal': 'polyA_signal_sequence',
+    'polyA_site': 'polyA_site',
+    'precursor_RNA': 'primary_transcript',
+    'prim_transcript': 'primary_transcript',
+    'primer_bind': 'primer_binding_site',
+    'promoter': 'promoter',
+    'protein_bind': 'protein_binding_site',
+    'rRNA': 'rRNA',
+    'rep_origin': 'origin_of_replication',
+    'repeat_region': 'repeat_region',
+    'sig_peptide': 'signal_peptide',
     'source': None,
-    'stem_loop': 'SO:0000313',
-    'tRNA': 'SO:0000253',
-    'telomere': 'SO:0000624',
-    'terminator': 'SO:0000141',
-    'tmRNA': 'SO:0000584',
-    'transit_peptide': 'SO:0000725',
+    'stem_loop': 'stem_loop',
+    'tRNA': 'tRNA',
+    'telomere': 'telomere',
+    'terminator': 'terminator',
+    'tmRNA': 'tmRNA',
+    'transit_peptide': 'transit_peptide',
     'unsure': None,
     'variation': None
 }
@@ -123,11 +123,15 @@ class GenbankConverter(object):
                 if name in feature.qualifiers:
                     feature.qualifiers[name] = feature.qualifiers[name][0]
 
-            component.features.add(feature.location.start,
-                                   size=len(feature),
-                                   type=GENBANK_TYPE_SO_TERM_MAP.get(feature.type),
-                                   name=feature_name,
-                                   qualifiers=feature_qualifiers)
+            component.features\
+                .add(feature.location.start,
+                     size=len(feature),
+                     strand=feature.location.strand,
+                     type=GENBANK_TYPE_SO_TERM_MAP.get(feature.type.replace("'", '_prime_')),
+                     name=feature_name,
+                     qualifiers=feature_qualifiers)
+
+        return component
 
     @classmethod
     def to_file(cls, component, file, record_id):
@@ -140,14 +144,25 @@ class GenbankConverter(object):
             raise RuntimeError('Can only export records with an explicit sequence.')
 
         record = SeqRecord(component.sequence, id=record_id)
-        record.annotations = component.qualifiers
+        record.annotations = component.meta
 
         for feature in component.features:
-            location = FeatureLocation(feature.start, feature.end)
+            location = FeatureLocation(feature.start, feature.end + 1, strand=feature.strand)
             type = SO_TERM_GENBANK_TYPE_MAP.get(feature.type) or feature.type
             qualifiers = feature.qualifiers
-            record.features.append(SeqFeature(location, type=type, qualifiers=qualifiers))
+            record.features.append(SeqFeature(location, type=type.replace('_prime_', "'"), qualifiers=qualifiers))
         return record
+
+
+class FASTAConverter(object):
+
+    @classmethod
+    def from_file(self, file):
+        raise NotImplementedError()
+
+    @classmethod
+    def to_file(self, component, file, record_id=None):
+        raise NotImplementedError()
 
 
 class SBOLConverter(object):

@@ -1,0 +1,15 @@
+LOCUS       Magic_Brick               12 bp    DNA              UNK 01-JAN-1980
+DEFINITION  .
+ACCESSION   MB1
+VERSION     MB1
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+     -10_signal      4..7
+     CDS             8..9
+                     /locus_id="b0001"
+ORIGIN
+        1 tatagagaca ca
+//

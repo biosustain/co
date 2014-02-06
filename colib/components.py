@@ -69,6 +69,11 @@ class _FeatureList(object):
     def _tt(self):
         return self._component._mutations_tt
 
+    def __len__(self):
+        if self._inherited_feature_list:
+            return len(self._inherited_feature_list) - len(self._removed_features) + len(self._features)
+        return len(self._features)
+
     def __iter__(self):
         if self._inherited_feature_list:  # NOTE: this is where caching should kick in on any inherited implementation.
             keep_features = (f for f in self._inherited_feature_list if f not in self._removed_features)
@@ -398,7 +403,10 @@ class _Feature(object):
 
     @property
     def sequence(self):
-        return self._component.sequence[self.start:self.end + 1]
+        sequence = self._component.sequence[self.start:self.end + 1]
+        if self.strand == REVERSE_STRAND:
+            return sequence.reverse_complement()
+        return sequence
 
     @property
     def qualifiers(self):
@@ -417,4 +425,4 @@ class _Feature(object):
         return self._position
 
     def __repr__(self):
-        return '<Feature:"{}" from {} to {}>'.format(self._name, self.start, self.end)
+        return '<Feature:{} from {} to {}>'.format(self.type, self.start, self.end)
