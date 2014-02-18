@@ -19,6 +19,9 @@ Commands
         "meta": {}
     }
 
+    GET /component/{id}/download ? format=genbank filename=None
+    Starts a download of the component in the given file format.
+
     GET /component/{id}/sequence
     Returns the nucleotide sequence of the component.
 
