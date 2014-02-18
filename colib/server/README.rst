@@ -15,6 +15,7 @@ Commands
     {
         "parent": None,
         "name": None,
+        "type": "plasmid",
         "uri": "/component/1"
         "meta": {}
     }

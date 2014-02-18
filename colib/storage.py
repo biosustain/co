@@ -3,7 +3,8 @@ from bisect import insort_left
 
 class _StorageCollection(object):
 
-    def __init__(self):
+    def __init__(self, storage):
+        self.storage = storage
         self._item_list = []
 
     def add(self, value):
@@ -19,6 +20,18 @@ class _StorageCollection(object):
         return self._item_list.__iter__()
 
 
+class ComponentStore(_StorageCollection):
+
+    def add(self, value):
+        pass
+
+
+class FeatureStore(_StorageCollection):
+
+    def filter(self, name=None, type=None, id=None):
+        pass
+
+
 class NamedCollection(object):
 
     def __init__(self, name_getter=None):
@@ -32,8 +45,10 @@ class Storage(object):
     A library takes care of loading and storing components. A component retrieved from the library may be lazily loaded.
 
     """
-    components = _StorageCollection()
-    organisms = _StorageCollection()
+
+    def __init__(self):
+        self.components = _StorageCollection(self)
+        self.organisms = _StorageCollection(self)
 
     def add_component(self, component):
         """

@@ -3,7 +3,7 @@
 class UnicellularOrganism(object):
 
     def __init__(self, display_id, parents=None):
-        self.contigs = set()
+        self.components = set()
 
     @classmethod
     def from_file(cls, file, converter=None):
@@ -18,9 +18,4 @@ class UnicellularOrganism(object):
         :type other: `UnicellularOrganism`
         :returns: A list of added, changed, and removed `Contig` objects.
         """
-        pass
-
-
-class Contig(object):
-    def __init__(self, name, component):
         pass

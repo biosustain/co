@@ -46,6 +46,12 @@ class _FeatureList(object):
         self._insert(feature)
         return feature
 
+    def as_tuple(self):
+        """
+        :returns: a tuple (added_features, removed_features)
+        """
+        return (tuple(self._features), tuple(self._removed_features))
+
     def _insert(self, feature):
         self._features.insert(feature)
         self._features_from_end.insert(feature)
@@ -355,6 +361,8 @@ class Component(Sequence):
             fall back to the diff solution used here.
         """
         assert isinstance(other, Component)
+        if other == self.parent:
+            return self._mutations
         if self._storage and self._storage == other._storage:
             return self._storage.diff(self, other)
         return diff(self, other)

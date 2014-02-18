@@ -1,8 +1,10 @@
+import json
 from Bio import SeqIO
 import re
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.SeqRecord import SeqRecord
-from colib.components import Component
+from colib.components import Component, _Feature
+from colib.identifiers import UniqueIdentifier
 
 
 GENBANK_META_ANNOTATIONS = ('accessions', 'comment', 'gi', 'organism', 'sequence_version', 'source', 'taxonomy')
@@ -77,7 +79,8 @@ GENBANK_TYPE_SO_TERM_MAP = {
 SO_TERM_GENBANK_TYPE_MAP = {v: k for k, v in GENBANK_TYPE_SO_TERM_MAP.items()}
 
 GENBANK_SINGLE_QUALIFIERS = (
-    'locus_id',
+    'gene',
+    'locus_tag',
     'codon_start',
     'protein_id',
     'note',
@@ -91,7 +94,6 @@ GENBANK_SINGLE_QUALIFIERS = (
     'transl_table',
     'rpt_family',
 )
-
 
 class GenbankConverter(object):
 
@@ -116,12 +118,12 @@ class GenbankConverter(object):
 
             # clean up synonyms for easier indexing:
             if 'gene_synonym' in feature.qualifiers:
-                feature.qualifiers['gene_synonym'] = re.split(r';\s+?', feature.qualifiers['gene_synonym'][0])
+                feature_qualifiers['gene_synonym'] = re.split(r';\s+?', feature.qualifiers['gene_synonym'][0])
 
             # flatten qualifiers where possible 'locus_id': ['b0001']  -> 'locus_id': 'b0001'
             for name in GENBANK_SINGLE_QUALIFIERS:
                 if name in feature.qualifiers:
-                    feature.qualifiers[name] = feature.qualifiers[name][0]
+                    feature_qualifiers[name] = feature.qualifiers[name][0]
 
             component.features\
                 .add(feature.location.start,
@@ -157,20 +159,51 @@ class GenbankConverter(object):
 class FASTAConverter(object):
 
     @classmethod
-    def from_file(self, file):
+    def from_file(cls, file):
         raise NotImplementedError()
 
     @classmethod
-    def to_file(self, component, file, record_id=None):
+    def to_file(cls, component, file, record_id=None):
         raise NotImplementedError()
 
 
 class SBOLConverter(object):
 
     @classmethod
-    def from_file(self, file):
+    def from_file(cls, file):
         raise NotImplementedError()
 
     @classmethod
-    def to_file(self, component, file, record_id=None):
+    def to_file(cls, component, file, record_id=None):
         raise NotImplementedError()
+
+
+class _ComponentEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, _Feature):
+            return {
+                'pos': obj.position,
+                'size': obj.size,
+                'type': obj.type,
+                'name': obj.name,
+                'strand': obj.strand,
+                'qualifiers': obj.qualifiers,
+                'link': [obj.link.id, obj.link_is_broken] if obj.link else None
+            }
+        elif isinstance(obj, Component):
+            return {
+                'parent': obj.parent.id if obj.parent else None,
+                'sequence': str(obj.sequence),
+                'mutations': obj.diff(obj.parent) if obj.parent else None,
+                'id': obj.id,
+                'meta': obj.meta,
+                'features': obj.features.as_tuple()
+            }
+        elif isinstance(obj, UniqueIdentifier):
+            return [obj.type, obj.identifier]
+
+class JSONConverter(object):
+
+    @classmethod
+    def to_file(cls, component, file, record_id=None):
+        file.write(json.dumps(component, cls=_ComponentEncoder))
