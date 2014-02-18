@@ -19,12 +19,12 @@ def diff(original, other):
 
 class _FeatureList(object):
 
-    def __init__(self, component, inherit=None):
+    def __init__(self, component, parent=None):
         self._component = component
         self._features = SortedCollection(key=attrgetter('position'))
         self._features_from_end = SortedCollection(key=attrgetter('end'))
         self._removed_features = set()
-        self._inherited_feature_list = inherit
+        self._parent_feature_list = parent
 
     def intersect(self, start, end, include_inherited=True):
         if start > end:
@@ -33,9 +33,9 @@ class _FeatureList(object):
         # TODO this intersect lookup requires optimization.
         intersect = set(self._features_from_end.filter_ge(start)) & set(self._features.filter_le(end))
 
-        if self._inherited_feature_list and include_inherited:
+        if self._parent_feature_list and include_inherited:
             logging.debug('intersect({}, {}): inherited between {} and {}'.format(start, end, self._tt.ge(start), self._tt.le(end)))
-            intersect |= self._inherited_feature_list.intersect(self._tt.ge(start), self._tt.le(end)) - self._removed_features
+            intersect |= self._parent_feature_list.intersect(self._tt.ge(start), self._tt.le(end)) - self._removed_features
         return intersect
 
     def find(self, *args, **kwargs):
@@ -56,7 +56,7 @@ class _FeatureList(object):
         if feature in self._features:
             self._features.remove(feature)
             self._features_from_end.remove(feature)
-        elif self._inherited_feature_list:
+        elif self._parent_feature_list:
             self._removed_features.add(feature)
         else:
             raise KeyError(feature)
@@ -70,13 +70,13 @@ class _FeatureList(object):
         return self._component._mutations_tt
 
     def __len__(self):
-        if self._inherited_feature_list:
-            return len(self._inherited_feature_list) - len(self._removed_features) + len(self._features)
+        if self._parent_feature_list:
+            return len(self._parent_feature_list) - len(self._removed_features) + len(self._features)
         return len(self._features)
 
     def __iter__(self):
-        if self._inherited_feature_list:  # NOTE: this is where caching should kick in on any inherited implementation.
-            keep_features = (f for f in self._inherited_feature_list if f not in self._removed_features)
+        if self._parent_feature_list:  # NOTE: this is where caching should kick in on any inherited implementation.
+            keep_features = (f for f in self._parent_feature_list if f not in self._removed_features)
             translated_features = (f.translate(self._component, self._tt) for f in keep_features)
 
             for f in heapq.merge(self._features, translated_features):
@@ -97,19 +97,20 @@ class Component(Sequence):
     without destroying descendant objects may be necessary.
     """
 
-    def __init__(self, sequence='', inherits=None, storage=None, meta=None):
+    def __init__(self, sequence='', parent=None, storage=None, meta=None, id=None):
         if isinstance(sequence, six.string_types):
             sequence = Seq(sequence)
 
         # TODO support components without sequence.
 
-        self._inherits = inherits
+        self._parent = parent
         self._sequence = sequence
         self._storage = storage
         self._mutations = ()
         self._mutations_tt = TranslationTable.from_mutations(self.sequence, self._mutations)
+        self._id = id
 
-        self.features = _FeatureList(self, inherit=self._inherits.features if self._inherits else None)
+        self.features = _FeatureList(self, parent=self._parent.features if self._parent else None)
         self.meta = meta or {}
 
 
@@ -134,12 +135,16 @@ class Component(Sequence):
         # TODO
 
     @property
+    def id(self):
+        return self._id
+
+    @property
     def length(self):
         return len(self._sequence)
 
     @property
-    def precursor(self):
-        return self._inherits
+    def parent(self):
+        return self._parent
 
     @property
     def sequence(self):
@@ -152,7 +157,7 @@ class Component(Sequence):
         The copy is linked to the same storage as the original, but is not saved automatically.
         """
         return Component(self._sequence,
-                         inherits=self,
+                         parent=self,
                          storage=self._storage)
 
     def mutate(self, mutations, strict=True, clone=True):
@@ -189,7 +194,7 @@ class Component(Sequence):
         :raises: OverlapException
         """
         component = self.clone() if clone else self
-        features = _FeatureList(component, inherit=self.features) if clone else self.features
+        features = _FeatureList(component, parent=self.features) if clone else self.features
         sequence = self._sequence.tomutable()
 
         tt = TranslationTable(self.length) if clone else self._mutations_tt
