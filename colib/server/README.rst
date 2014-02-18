@@ -51,8 +51,13 @@ Commands
     lineage.
 
     GET /component/{id}/fdiff {other: component}
-    Similar to /diff, but instead returns the list of added and removed features. Only works with components within a
+    Similar to /diff, but instead returns the lists of added and removed features. Only works with components within a
     direct lineage.
+
+    {
+        "added": [],
+        "removed": [],
+    }
 
     GET /component/{id}/lineage
     Returns the ancestry of this component as an array of component uris.
