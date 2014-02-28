@@ -24,7 +24,7 @@ from Bio.Seq import Seq
 import six
 from colib.components import Component
 from colib.converters import GenbankConverter, JSONConverter
-from colib.organisms import UnicellularOrganism
+from colib.organisms import HaploidOrganism
 from colib.storage import Storage
 from colib.position import Range
 from colib.mutations import SNP, Mutation, DEL, INS, TranslationTable, SUB
@@ -63,13 +63,25 @@ class TranslationTableTestCase(unittest.TestCase):
         with self.assertRaises(IndexError):
             _ = self.tt[10]
 
-    @unittest.SkipTest
     def test_insert_end(self):
-        pass # TODO
+        self.tt.insert(9, 5)
 
-    @unittest.SkipTest
+        self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], list(self.tt))
+        self.assertEqual(15, self.tt.query_size)
+
     def test_delete_end(self):
-        pass # TODO
+        self.tt.delete(9, 1)
+
+        self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, None], list(self.tt))
+        self.assertEqual(9, self.tt.query_size)
+
+    def test_delete_deleted(self):
+
+        self.tt.delete(2, 5)
+        self.assertEqual([0, 1, None, None, None, None, None, 2, 3, 4], list(self.tt))
+
+        self.tt.delete(3, 3)  # should raise an error
+        self.assertEqual([0, 1, None, None, None, None, None, 2, 3, 4], list(self.tt))
 
     def test_insert_mid(self):
         self.tt.insert(3, 2)
@@ -77,6 +89,7 @@ class TranslationTableTestCase(unittest.TestCase):
         #       012  3456789
         #       012345678901
         self.assertEqual([0, 1, 2, 5, 6, 7, 8, 9, 10, 11], list(self.tt))
+        self.assertEqual(12, self.tt.query_size)
 
     def test_delete_mid(self):
         # e.g.     DEFG
@@ -85,12 +98,13 @@ class TranslationTableTestCase(unittest.TestCase):
         #       012    345
         self.tt.delete(3, 4)
         self.assertEqual([0, 1, 2, None, None, None, None, 3, 4, 5], list(self.tt))
+        self.assertEqual(6, self.tt.query_size)
 
     def test_order_1(self):
         self.tt.delete(5, 1)  # ABCDE  -GHIJ
-        self.assertEqual(self.tt.query_size, 9)
+        self.assertEqual(9, self.tt.query_size)
         self.tt.insert(5, 2)  # ABCDExx-GHIJ
-        self.assertEqual(self.tt.query_size, 11)
+        self.assertEqual(11, self.tt.query_size)
         self.assertEqual([0, 1, 2, 3, 4, None, 7, 8, 9, 10], list(self.tt))
 
     def test_order_2(self):
@@ -222,7 +236,7 @@ class StorageTestCase(unittest.TestCase):
         self.storage.components.add(component)
 
     def test_yeast(self):
-        yeast = UnicellularOrganism('Saccharomyces cerevisiae S288c')
+        yeast = HaploidOrganism('Saccharomyces cerevisiae S288c')
 
         components = (
             ('I', 'NC_001133.9.gb', 'chromosome'),
@@ -263,7 +277,7 @@ class UnicellularOrganismTestCase(unittest.TestCase):
         storage.components.add(Component('part-1'))
         storage.components.add(Component('plasmid-1'))
 
-        strain = UnicellularOrganism('strain-1')
+        strain = HaploidOrganism('strain-1')
         # strain.contigs.add(Contig('genome', self.storage.components['genome-1']))
         # strain.contigs.add(Contig('plasmid-a', self.storage.components['plasmid-1']))
 
@@ -292,7 +306,7 @@ class UnicellularOrganismTestCase(unittest.TestCase):
 
         new_genome = strain.contigs[0].mutate(mutations)
 
-        new_strain = UnicellularOrganism('strain-1-1', parents=[strain])
+        new_strain = HaploidOrganism('strain-1-1', parents=[strain])
         new_strain.contigs.add(new_genome) # replaces genome.
 
         self.storage.add_organism(new_strain) # saves strain.

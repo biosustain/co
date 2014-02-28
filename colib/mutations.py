@@ -14,11 +14,11 @@ class TranslationTable(object):
     """
 
     def __init__(self, size, changes=()):
-        self._reference_size = size
-        self._query_size = size
+        self._source_size = size
+        self._target_size = size
         self._chain = [(size, 0, 0)]  # (ungapped_size, dr, dq)
-        self._r_start, self._r_end = 0, size
-        self._q_start, self._q_end = 0, size
+        self._s_start, self._s_end = 0, size
+        self._t_start, self._t_end = 0, size
 
     @classmethod
     def from_mutations(cls, sequence, mutations, strict=True):
@@ -45,33 +45,42 @@ class TranslationTable(object):
     def from_sequences(cls, reference, query, algorithm=None):
         raise NotImplementedError
 
-    def _insert_gap(self, position, reference_gap, query_gap):
-        if 0 > position >= self._reference_size:
+    def _insert_gap(self, position, source_gap, target_gap):
+        if 0 > position >= self._source_size:
             raise IndexError()
 
-        if position <= self._r_start:
-            if reference_gap:
-                self._r_start += reference_gap - query_gap
-                self._q_end += query_gap - reference_gap
-            if query_gap:
-                self._q_start += query_gap - reference_gap
-                self._r_end += query_gap - reference_gap
+        if position <= self._s_start:
+            if source_gap:
+                self._s_start += source_gap - target_gap
+                self._t_end += target_gap - source_gap
+            if target_gap:
+                self._t_start += target_gap - source_gap
+                self._s_end += target_gap - source_gap
 
-            self._query_size += reference_gap - query_gap
+            self._target_size += source_gap - target_gap
             # TODO increase size of ungapped alignment
             return
 
-        offset = self._r_start
-        for i, (ungapped_size, dr, dq) in enumerate(self._chain):
-            if offset < position <= offset + ungapped_size:
-                gap_offset = position - offset
-                self._chain.insert(i, (gap_offset, reference_gap, query_gap))
-                self._chain[i + 1] = (ungapped_size - gap_offset, dr, dq)
+        elif position >= self._s_end:
+            raise NotImplementedError()
+        else:
+            offset = self._s_start
 
-                # TODO change _r_end, _q_end
-                self._query_size += reference_gap - query_gap
-                return
-            offset += ungapped_size + dr # NOTE might be dq
+            for i, (ungapped_size, ds, dt) in enumerate(self._chain):
+                if offset < position <= offset + ungapped_size:
+                    gap_offset = position - offset
+                    self._chain.insert(i, (gap_offset, source_gap, target_gap))
+                    self._chain[i + 1] = (ungapped_size - gap_offset, ds, dt)
+
+                    # TODO change _s_end, _t_end
+                    self._target_size += source_gap - target_gap
+
+                    if source_gap:
+                        self._t_end += target_gap - source_gap
+                    if target_gap:
+                        self._s_end += target_gap - source_gap
+                    return
+                offset += ungapped_size + ds # NOTE might be dt
 
     def insert(self, position, size):
         self._insert_gap(position, size, 0)
@@ -84,11 +93,11 @@ class TranslationTable(object):
 
     @property
     def reference_size(self):
-        return self._reference_size
+        return self._source_size
 
     @property
     def query_size(self):
-        return self._query_size
+        return self._target_size
 
     def le(self, position): # FIXME horrible le implementation.
         """
@@ -110,6 +119,14 @@ class TranslationTable(object):
                 return query_position
             position += 1
 
+    def alignment(self):
+        """
+        Returns an iterator yielding tuples in the form (source, target)
+
+        :returns: an iterator over all coordinates in both the source and target sequence.
+        """
+        raise NotImplementedError()
+
     def __getitem__(self, position):
         """
         Maps from a reference coordinate to a query coordinate.
@@ -117,29 +134,29 @@ class TranslationTable(object):
         :returns: The new coordinate as an `int`, if it exists; none otherwise.
         :raises IndexError: If the coordinate does not exist in the original system
         """
-        if position >= self._reference_size or position < 0:
+        if position >= self._source_size or position < 0:
             raise IndexError()
 
-        if position < self._q_start:  # beginning of query was deleted.
+        if position < self._t_start:  # beginning of query was deleted.
             return None
         #
         # if position >= self._q_end:  # beginning of query was deleted.
         #     return None
 
         offset = 0
-        query_offset = self._r_start - self._q_start
-        for ungapped_size, dr, dq in self._chain:
-            # print 'chain:', (ungapped_size, dr, dq)
-            # print (ungapped_size, dr, dq, query_offset, position, offset)
-            # print position < offset + ungapped_size, position < offset + ungapped_size + dq
+        query_offset = self._s_start - self._t_start
+        for ungapped_size, ds, dt in self._chain:
+            # print 'chain:', (ungapped_size, ds, dt)
+            # print (ungapped_size, ds, dt, query_offset, position, offset)
+            # print position < offset + ungapped_size, position < offset + ungapped_size + dt
             if position < offset + ungapped_size:  # target position is in this ungapped block
                 # FIXME the <= is wrong, but necessary for some tests to work. The worst kind of wrong.
                 return query_offset + (position - offset)
-            elif position < offset + ungapped_size + dq:
+            elif position < offset + ungapped_size + dt:
                 return None  # position falls into a gap in the query sequence.
 
-            query_offset += ungapped_size + dr
-            offset += ungapped_size + dq
+            query_offset += ungapped_size + ds
+            offset += ungapped_size + dt
             # print
 
         return 0
@@ -148,7 +165,7 @@ class TranslationTable(object):
         """
         Returns the length of the sequence in the old coordinate system.
         """
-        return self._reference_size
+        return self._source_size
 
 
 class Mutation(object):
