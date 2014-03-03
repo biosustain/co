@@ -27,7 +27,8 @@ from colib.converters import GenbankConverter, JSONConverter
 from colib.organisms import HaploidOrganism
 from colib.storage import Storage
 from colib.position import Range
-from colib.mutations import SNP, Mutation, DEL, INS, TranslationTable, SUB
+from colib.mutations import SNP, Mutation, DEL, INS, TranslationTable, SUB, OverlapException
+
 
 class TranslationTableTestCase(unittest.TestCase):
 
@@ -49,47 +50,76 @@ class TranslationTableTestCase(unittest.TestCase):
     def test_delete_start(self):
         # e.g. new sequence: -----FGHIJ
         self.tt.delete(0, 5)
-        self.assertEqual(None, self.tt[0])
-        self.assertEqual(None, self.tt[4])
-        self.assertEqual(0, self.tt[5])
-        self.assertEqual(4, self.tt[9])
-
-        for i, expected_letter in enumerate(self.sequence):
-            if '-----FGHIJ'[i] == '-':
-                self.assertIsNone(self.tt[i])
-            else:
-                self.assertEqual(expected_letter, 'FGHIJ'[self.tt[i]])
+        logging.debug(self.tt.__dict__)
+        self.assertEqual([None, None, None, None, None, 0, 1, 2, 3, 4], list(self.tt))
 
         with self.assertRaises(IndexError):
             _ = self.tt[10]
 
     def test_insert_end(self):
-        self.tt.insert(9, 5)
+        self.tt.insert(10, 5)
 
+        logging.debug('\n' + self.tt.alignment_str())
         self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], list(self.tt))
-        self.assertEqual(15, self.tt.query_size)
+        self.assertEqual(15, self.tt.target_size)
+
+    def test_insert_before_end(self):
+        self.tt.insert(9, 5)
+        self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 14], list(self.tt))
+        self.assertEqual(15, self.tt.target_size)
 
     def test_delete_end(self):
         self.tt.delete(9, 1)
-
         self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, None], list(self.tt))
-        self.assertEqual(9, self.tt.query_size)
+        self.assertEqual(9, self.tt.target_size)
 
     def test_delete_deleted(self):
-
         self.tt.delete(2, 5)
         self.assertEqual([0, 1, None, None, None, None, None, 2, 3, 4], list(self.tt))
 
-        self.tt.delete(3, 3)  # should raise an error
+        with self.assertRaises(OverlapException):
+            self.tt.delete(3, 3)
+
         self.assertEqual([0, 1, None, None, None, None, None, 2, 3, 4], list(self.tt))
+
+    def test_delete_next_deleted(self):
+        logging.debug(self.tt.__dict__)
+        self.tt.delete(2, 5)
+        self.assertEqual([0, 1, None, None, None, None, None, 2, 3, 4], list(self.tt))
+
+        logging.debug(self.tt.__dict__)
+        logging.debug('\n' + self.tt.alignment_str())
+
+        with self.assertRaises(OverlapException):
+            self.tt.delete(2, 1)
+
+        self.tt.delete(0, 1)
+
+        #self.assertEqual([(1, 0, 6), (8, 0, 0)], self.tt._chain)
+        #self.assertEqual([(1, 0, 1), (0, 0, 5), (8, 0, 0)], self.tt._chain)
+
+        logging.debug(self.tt.__dict__)
+
+        logging.debug('\n' + self.tt.alignment_str())
+        self.assertEqual([0, None, None, None, None, None, None, 1, 2, 3], list(self.tt))
+
+    def test_delete_start_gap_delete(self):
+        self.tt.delete(2, 5)
+        self.assertEqual([0, 1, None, None, None, None, None, 2, 3, 4], list(self.tt))
+        self.tt.delete(0, 1)
+        logging.debug('\n' + self.tt.alignment_str())
+        logging.debug(self.tt.__dict__)
+        self.assertEqual([None, 0, None, None, None, None, None, None, 1, 2], list(self.tt))
 
     def test_insert_mid(self):
         self.tt.insert(3, 2)
         # e.g.  ABCXXDEFGHIJ
         #       012  3456789
         #       012345678901
+        logging.debug(self.tt.__dict__)
+        logging.debug('\n'+self.tt.alignment_str())
         self.assertEqual([0, 1, 2, 5, 6, 7, 8, 9, 10, 11], list(self.tt))
-        self.assertEqual(12, self.tt.query_size)
+        self.assertEqual(12, self.tt.target_size)
 
     def test_delete_mid(self):
         # e.g.     DEFG
@@ -98,20 +128,20 @@ class TranslationTableTestCase(unittest.TestCase):
         #       012    345
         self.tt.delete(3, 4)
         self.assertEqual([0, 1, 2, None, None, None, None, 3, 4, 5], list(self.tt))
-        self.assertEqual(6, self.tt.query_size)
+        self.assertEqual(6, self.tt.target_size)
 
     def test_order_1(self):
         self.tt.delete(5, 1)  # ABCDE  -GHIJ
-        self.assertEqual(9, self.tt.query_size)
+        self.assertEqual(9, self.tt.target_size)
         self.tt.insert(5, 2)  # ABCDExx-GHIJ
-        self.assertEqual(11, self.tt.query_size)
+        self.assertEqual(11, self.tt.target_size)
         self.assertEqual([0, 1, 2, 3, 4, None, 7, 8, 9, 10], list(self.tt))
 
     def test_order_2(self):
         self.tt.insert(5, 2)  # ABCDExxFGHIJ
-        self.assertEqual(self.tt.query_size, 12)
+        self.assertEqual(self.tt.target_size, 12)
         self.tt.delete(5, 1)  # ABCDExx-GHIJ
-        self.assertEqual(self.tt.query_size, 11)
+        self.assertEqual(self.tt.target_size, 11)
         self.assertEqual([0, 1, 2, 3, 4, None, 7, 8, 9, 10], list(self.tt))
 
     def test_substitute(self):

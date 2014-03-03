@@ -1,3 +1,5 @@
+from itertools import chain, repeat
+import logging
 import six
 from colib.sequence import Sequence
 
@@ -49,16 +51,25 @@ class TranslationTable(object):
         if 0 > position >= self._source_size:
             raise IndexError()
 
+        logging.debug('insert_gap: {} source gap: {}; target gap: {}'.format(position, source_gap, target_gap))
+
         if position <= self._s_start:
+            first_ungapped_size, ds, dt = self._chain[0]
+            if target_gap > first_ungapped_size:
+                raise OverlapException('Cannot insert gap at start: overlaps')
+
             if source_gap:
                 self._s_start += source_gap - target_gap
-                self._t_end += target_gap - source_gap
+                self._t_end += source_gap - target_gap
             if target_gap:
                 self._t_start += target_gap - source_gap
                 self._s_end += target_gap - source_gap
 
             self._target_size += source_gap - target_gap
-            # TODO increase size of ungapped alignment
+            # TODO decrease size of ungapped alignment
+
+            self._chain[0] = first_ungapped_size - target_gap, ds, dt
+
             return
 
         elif position >= self._s_end:
@@ -67,20 +78,44 @@ class TranslationTable(object):
             offset = self._s_start
 
             for i, (ungapped_size, ds, dt) in enumerate(self._chain):
-                if offset < position <= offset + ungapped_size:
+                print(i, position, ungapped_size, ds, dt)
+
+                gap_start = offset + ungapped_size
+                source_gap_end = gap_start + dt # NOTE might be ds
+
+                #if position == offset:
+                #    raise NotImplementedError()
+                if offset < position < gap_start:
                     gap_offset = position - offset
+                    logging.warn(gap_offset)
                     self._chain.insert(i, (gap_offset, source_gap, target_gap))
-                    self._chain[i + 1] = (ungapped_size - gap_offset, ds, dt)
 
-                    # TODO change _s_end, _t_end
-                    self._target_size += source_gap - target_gap
 
-                    if source_gap:
-                        self._t_end += target_gap - source_gap
-                    if target_gap:
-                        self._s_end += target_gap - source_gap
-                    return
-                offset += ungapped_size + ds # NOTE might be dt
+
+                    self._chain[i + 1] = (ungapped_size - gap_offset , ds, dt)
+                    break
+                if position == gap_start:
+                    if ds and source_gap or dt and target_gap:
+                        # allow for max one insertion and one deletion per coordinate:
+                        raise OverlapException('Cannot insert gap at {}: '
+                                               'Gap of the same type already starting at this position.'.format(position))
+                    self._chain[i] = (ungapped_size, ds + source_gap, dt + target_gap)
+                    break
+                elif position < source_gap_end:
+                    raise OverlapException('Cannot insert gap at {}: '
+                                           'Gap already present from {} to {}'.format(position,
+                                                                                      gap_start,
+                                                                                      source_gap_end))
+
+                offset = source_gap_end
+
+            # FIXME failure case first?
+            self._target_size += source_gap - target_gap
+
+            if source_gap:
+                self._t_end += source_gap - target_gap
+            if target_gap:
+                self._s_end += target_gap - source_gap
 
     def insert(self, position, size):
         self._insert_gap(position, size, 0)
@@ -92,11 +127,11 @@ class TranslationTable(object):
         self._insert_gap(position, size, size)
 
     @property
-    def reference_size(self):
+    def source_size(self):
         return self._source_size
 
     @property
-    def query_size(self):
+    def target_size(self):
         return self._target_size
 
     def le(self, position): # FIXME horrible le implementation.
@@ -125,7 +160,41 @@ class TranslationTable(object):
 
         :returns: an iterator over all coordinates in both the source and target sequence.
         """
-        raise NotImplementedError()
+        def source():
+            offset = 0
+            for ungapped_size, ds, dt in self._chain:
+                for i in range(ungapped_size):
+                    yield offset + i
+                for i in range(dt):
+                    yield offset + ungapped_size + i
+                for i in range(ds):
+                    yield None
+                offset += ungapped_size + dt
+
+        def target():
+            offset = 0
+            for ungapped_size, ds, dt in self._chain:
+                for i in range(ungapped_size):
+                    yield offset + i
+                for i in range(ds):
+                    yield offset + ungapped_size + i
+                for i in range(dt):
+                    yield None
+                offset += ungapped_size + ds
+
+        return zip(
+            chain(repeat(None, self._s_start), source()),
+            chain(repeat(None, self._t_start), target())
+        )
+
+    def alignment_str(self):
+        s_str, t_str = '', ''
+
+        for s, t in self.alignment():
+            s_str += ' {:3d}'.format(s) if s is not None else ' ---'
+            t_str += ' {:3d}'.format(t) if t is not None else ' ---'
+
+        return s_str + '\n' + t_str
 
     def __getitem__(self, position):
         """
@@ -139,27 +208,40 @@ class TranslationTable(object):
 
         if position < self._t_start:  # beginning of query was deleted.
             return None
-        #
-        # if position >= self._q_end:  # beginning of query was deleted.
-        #     return None
+
+        if position >= self._t_end:  # end of query was deleted.
+            return None
 
         offset = 0
         query_offset = self._s_start - self._t_start
         for ungapped_size, ds, dt in self._chain:
+            gap_start = offset + ungapped_size
+            source_gap_end = gap_start + ds
+            query_gap_end = gap_start + dt # NOTE might be ds
+
             # print 'chain:', (ungapped_size, ds, dt)
             # print (ungapped_size, ds, dt, query_offset, position, offset)
             # print position < offset + ungapped_size, position < offset + ungapped_size + dt
-            if position < offset + ungapped_size:  # target position is in this ungapped block
+            if position < gap_start:  # target position is in this ungapped block
                 # FIXME the <= is wrong, but necessary for some tests to work. The worst kind of wrong.
+                logging.debug('{}: {} {} {} {}'.format(
+                    position,
+                    ungapped_size,
+                    ds,
+                    dt,
+                    query_offset + (position - offset)
+                ))
                 return query_offset + (position - offset)
-            elif position < offset + ungapped_size + dt:
-                return None  # position falls into a gap in the query sequence.
-
-            query_offset += ungapped_size + ds
-            offset += ungapped_size + dt
+            elif position < query_gap_end:
+                return None  # position falls into a gap in the query sequence (i.e. a deletion)
+            # elif position < source_gap_end:
+            else:
+                query_offset += ungapped_size + ds
+                offset += ungapped_size + dt
             # print
 
-        return 0
+        logging.debug('offset, query_offset, position: ' + ', '.join(map(str, [offset, query_offset, position])))
+        return query_offset + (position - offset)
 
     def __len__(self, other):
         """
