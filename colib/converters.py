@@ -188,7 +188,7 @@ class _ComponentEncoder(json.JSONEncoder):
                 'name': obj.name,
                 'strand': obj.strand,
                 'qualifiers': obj.qualifiers,
-                'link': [obj.link.id, obj.link_is_broken] if obj.link else None
+                'link': [obj.source.id, obj.link_is_broken] if obj.source else None
             }
         elif isinstance(obj, Component):
             return {
@@ -197,7 +197,7 @@ class _ComponentEncoder(json.JSONEncoder):
                 'mutations': obj.diff(obj.parent) if obj.parent else None,
                 'id': obj.id,
                 'meta': obj.meta,
-                'features': obj.features.as_tuple()
+                'features': (tuple(obj.features.added), tuple(obj.features.removed))
             }
         elif isinstance(obj, UniqueIdentifier):
             return [obj.type, obj.identifier]

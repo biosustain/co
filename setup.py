@@ -7,12 +7,14 @@ setup(
     version='0.1.0a1',
     packages=['colib', 'colib.utils'],
     url='',
-    license='All Rights Reserved',
+    license='MIT',
     author='Lars Schöning',
     author_email='lays@biosustain.dtu.dk',
     description='',
     test_suite='nose.collector',
     install_requires=[
-        'biopython==1.62'
+        'Flask-Presst>=0.2.2',
+        'biopython>=1.62',
+        'blinker>=1.3',
     ]
 )

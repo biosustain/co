@@ -268,13 +268,9 @@ class Mutation(object):
     """
     def __init__(self, position, size, new_sequence=''):
         assert isinstance(new_sequence, (six.string_types, Sequence))
-        self._position = position
-        self._size = size
-        self._new_sequence = new_sequence
-
-    @property
-    def position(self):
-        return int(self._position)
+        self.position = int(position)
+        self.size = int(size)
+        self.new_sequence = new_sequence
 
     @property
     def start(self):
@@ -287,16 +283,8 @@ class Mutation(object):
         return self.position + self.size - 1
 
     @property
-    def size(self):
-        return int(self._size)
-
-    @property
     def new_size(self):
         return len(self.new_sequence)
-
-    @property
-    def new_sequence(self):
-        return self._new_sequence
 
     def is_substitution(self):
         return self.size == len(self.new_sequence)

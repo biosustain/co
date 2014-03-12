@@ -5,12 +5,13 @@ import heapq
 import logging
 from operator import attrgetter
 from Bio.Seq import Seq
+from blinker import Signal
 import six
+from colib.annotations import FeatureBase, FORWARD_STRAND
 from colib.mutations import TranslationTable, OverlapException
 from colib.sequence import Sequence
 from colib.utils import SortedCollection
 
-FORWARD_STRAND, REVERSE_STRAND = 1, -1
 
 def diff(original, other):
     if original.precursor == other:
@@ -19,7 +20,8 @@ def diff(original, other):
 
 class _FeatureList(object):
 
-    def __init__(self, component, parent=None):
+    def __init__(self, component, parent=None, feature_class=None):
+        self._feature_class = feature_class or _Feature
         self._component = component
         self._features = SortedCollection(key=attrgetter('position'))
         self._features_from_end = SortedCollection(key=attrgetter('end'))
@@ -41,16 +43,17 @@ class _FeatureList(object):
     def find(self, *args, **kwargs):
         pass
 
-    def add(self, position, size, *args, **kwargs):
-        feature = _Feature(self._component, position, size, *args, **kwargs)
+    def add(self, position=None, size=None, **kwargs):
+        if isinstance(position, FeatureBase):
+            feature = position
+            # feature = self._feature_class(self._component,
+            #                    obj.position,
+            #                    obj.size,
+            #                    **obj.attributes)
+        else:
+            feature = self._feature_class(self._component, position, size, **kwargs)
         self._insert(feature)
         return feature
-
-    def as_tuple(self):
-        """
-        :returns: a tuple (added_features, removed_features)
-        """
-        return (tuple(self._features), tuple(self._removed_features))
 
     def _insert(self, feature):
         self._features.insert(feature)
@@ -74,6 +77,14 @@ class _FeatureList(object):
     @property
     def _tt(self):
         return self._component._mutations_tt
+
+    @property
+    def added(self):
+        return self._features
+
+    @property
+    def removed(self):
+        return self._removed_features
 
     def __len__(self):
         if self._parent_feature_list:
@@ -102,8 +113,11 @@ class Component(Sequence):
     to by another component -- either by direct mutation or through a `_Feature`. A strategy for deleting components
     without destroying descendant objects may be necessary.
     """
+    on_feature_added = Signal()
+    on_feature_removed = Signal()
+    on_internal_mutation = Signal()
 
-    def __init__(self, sequence='', parent=None, storage=None, meta=None, id=None):
+    def __init__(self, sequence='', parent=None, storage=None, meta=None, id=None, feature_class=None):
         if isinstance(sequence, six.string_types):
             sequence = Seq(sequence)
 
@@ -116,9 +130,16 @@ class Component(Sequence):
         self._mutations_tt = TranslationTable.from_mutations(self.sequence, self._mutations)
         self._id = id
 
-        self.features = _FeatureList(self, parent=self._parent.features if self._parent else None)
+        self.features = feature_list = _FeatureList(self,
+                                                    feature_class=feature_class,
+                                                    parent=self._parent.features if self._parent else None)
         self.meta = meta or {}
 
+
+
+    @classmethod
+    def from_file(cls, file, converter=None):
+        pass
 
     @classmethod
     def from_components(cls, components, copy_features=False):
@@ -217,6 +238,7 @@ class Component(Sequence):
             # FIXME handle addition to end of sequence.
             # FIXME requires proper handling of r/q_end to find out new size.
 
+            logging.debug('---> mutation: "%s"', mutation)
 
             if strict:
                 translated_start = tt[mutation.position]
@@ -238,20 +260,18 @@ class Component(Sequence):
             # TODO also search previously affected features and exclude these.
             # TODO e.g. features = _FeatureList(component, inherit=self.features)
 
-            print(sequence)
-            print(list(tt))
+            logging.debug('sequence: "%s"', sequence)
+            logging.debug('alignment: \n%s', tt.alignment_str())
 
             if translated_start is None:
                 raise OverlapException()
-
-            print(sequence)
 
             logging.debug('new features: {}'.format(list(features)))
             logging.info('features in mutation: {}'.format(affected_features))
 
             for feature in affected_features | changed_features:
-                logging.debug(list(range(len(self.sequence))))
-                logging.debug(list(tt))
+                # logging.debug(list(range(len(self.sequence))))
+                # logging.debug(list(tt))
                 logging.info('{} with sequence "{}" affected by {}.'.format(feature, feature.sequence, mutation))
 
 
@@ -283,9 +303,9 @@ class Component(Sequence):
                 else:  # mutation.start >= feature.start
 
                     if mutation.end < feature.end:
-                        logging.debug('MFMF from {} to {}'.format(tt[mutation.end], tt[feature.end]))
+                        logging.debug('MFMF from {} to {}'.format(tt[mutation.end + 1], tt[feature.end]))
 
-                        changed_features.add(feature.move(mutation.end, feature.end))
+                        changed_features.add(feature.move(mutation.end + 1, feature.end))
                     else:
                         pass # feature removed and not replaced.
                         logging.debug('MFFM feature removed')
@@ -319,7 +339,6 @@ class Component(Sequence):
             logging.debug('new sequence: "%s"', sequence)
             logging.debug('changed features: {}'.format(changed_features))
 
-        print(list(zip(self.sequence, range(self.length), tt)))
         logging.debug('mutated sequence: %s', str(sequence))
 
         component._sequence = sequence.toseq()
@@ -327,7 +346,10 @@ class Component(Sequence):
         component._mutations_tt = tt
         component.features = features
 
+        logging.debug('\n' + tt.alignment_str())
+
         for feature in changed_features:
+            logging.debug('changed: %s', feature)
             translated_feature = feature.translate(component, tt)
             features._insert(translated_feature)
 
@@ -341,6 +363,12 @@ class Component(Sequence):
                           translated_feature.sequence)
 
         return component
+
+    def get_lineage(self):
+        component = self
+        while self.parent:
+            component = self.parent
+            yield component
 
     def inherits(self, other):
         """
@@ -368,18 +396,15 @@ class Component(Sequence):
         return diff(self, other)
 
 
-class _Feature(object):
+class _Feature(FeatureBase):
 
-    def __init__(self, component, position, size, type=None, name=None, qualifiers=None, strand=FORWARD_STRAND, link=None, broken_link=False):
-        self._component = component
-        self._position = position
-        self._size = size
+    def __init__(self, component, position, size, type=None, name=None, qualifiers=None, strand=FORWARD_STRAND, source=None, source_link_broken=False):
+        FeatureBase.__init__(component, position, size, strand)
         self._type = type
         self._name = name
-        self._strand = strand
         self._qualifiers = qualifiers or {}
-        self._link = link
-        self._broken_link = broken_link
+        self._source = source
+        self._source_link_broken = source_link_broken
 
     component = property(fget=attrgetter('_component'))
     position = property(fget=attrgetter('_position'))
@@ -387,8 +412,8 @@ class _Feature(object):
     type = property(fget=attrgetter('_type'))
     name = property(fget=attrgetter('_name'))
     strand = property(fget=attrgetter('_strand'))
-    link = property(fget=attrgetter('_link'))
-    link_is_broken = property(fget=attrgetter('_link_is_broken'))
+    source = property(fget=attrgetter('_source'))
+    source_link_broken = property(fget=attrgetter('_source_link_broken'))
 
     def translate(self, component, tt):
         # size = tt[self.end] - tt[self.start] + 1
@@ -401,23 +426,9 @@ class _Feature(object):
                         self._type,
                         self._name,
                         self._qualifiers,
-                        self._link,
-                        self._broken_link)
-
-    @property
-    def start(self):
-        return self._position
-
-    @property
-    def end(self):
-        return self._position + self._size - 1
-
-    @property
-    def sequence(self):
-        sequence = self._component.sequence[self.start:self.end + 1]
-        if self.strand == REVERSE_STRAND:
-            return sequence.reverse_complement()
-        return sequence
+                        self.strand,
+                        self._source,
+                        self._source_link_broken)
 
     @property
     def qualifiers(self):
@@ -425,15 +436,6 @@ class _Feature(object):
 
     def is_anonymous(self):
         return self._type is None
-
-    def __lt__(self, other):
-        return self._position < other._position
-
-    def __eq__(self, other):
-        return self._position == other._position
-
-    def __hash__(self):
-        return self._position
 
     def __repr__(self):
         return '<Feature:{} from {} to {}>'.format(self.type, self.start, self.end)
