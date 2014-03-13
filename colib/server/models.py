@@ -137,7 +137,6 @@ class Component(db.Model):
         for feature in self.get_features(include_inherited=True):
             colib_component.features.add(feature)
 
-        print(list(colib_component.features))
         colib_mutated = colib_component.mutate(mutations, strict=strict)
 
         component = Component(sequence=str(colib_mutated.sequence), parent=self)

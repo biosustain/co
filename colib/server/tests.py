@@ -92,7 +92,6 @@ class ServerTestCase(TestCase):
         self.assertEqual([], self.client.get('/component/3/added_features').json)
 
     def test_mutate(self):
-        # print(DEL(2, 5).__dict__)
         self.assertEqual('/component/6', self.client.post('/component/1/mutate', data=json.dumps(dict(
             mutations=[DEL(2, 5).__dict__]
         )), content_type='application/json').json['resource_uri'])
@@ -102,12 +101,22 @@ class ServerTestCase(TestCase):
 
         # AGATATATATACGAGAGCCC
         # AG-----TATACGAGAGCCC c.2-5_del
+        #    ||||||||          TATA_box  1.2
+        #        ||||                    6.5 (or 6.1)
 
         self.assertEqual('AGTATACGAGAGCCC', self.client.get('/component/6/sequence').json)
         self.assertEqual([{'position': 2,
                            'new_sequence': '',
                            'resource_uri': '/mutation/1',
                            'size': 5}], self.client.get('/component/6/mutations').json)
+
+        self.assertEqual(['/feature/1.1', '/feature/1.2'], self.client.get('/component/6/removed_features').json)
+
+        self.assertEqual([{'size': 10,
+                           'position': 2,
+                           'resource_uri': '/feature/6.5',
+                           'type': 'TATA_box',
+                           'name': None}], self.client.get('/component/6/added_features').json)
 
     def tearDown(self):
         db.session.remove()

@@ -49,7 +49,7 @@ class ComponentResource(ModelResource):
         return map(FeatureProxy.from_record, component.added_features)
 
     @resource_method('GET')
-    @marshal_field(fields.ToMany('feature', embedded=True))
+    @marshal_field(fields.ToMany('feature'))
     def removed_features(self, component):
         # TODO pagination (important!)
         return map(FeatureProxy.from_record, component.removed_features)
