@@ -51,6 +51,10 @@ class ServerTestCase(TestCase):
 
             db.session.commit()
 
+    def tearDown(self):
+        db.session.remove()
+        db.drop_all()
+
     def test_sequence(self):
         self.assertEqual('AGATATATATACGAGAGCCC', self.client.get('/component/1/sequence').json)
         self.assertEqual('AAAATTTTGGGGCCCC', self.client.get('/component/5/sequence').json)
@@ -121,7 +125,3 @@ class ServerTestCase(TestCase):
                            'resource_uri': '/feature/6.5',
                            'type': 'TATA_box',
                            'name': None}], self.client.get('/component/6/added_features').json)
-
-    def tearDown(self):
-        db.session.remove()
-        db.drop_all()

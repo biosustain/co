@@ -204,20 +204,14 @@ class FeatureTestCase(unittest.TestCase):
         component = Component('ABCDEFGHIerrorJKLMNOPQRSTUVXYZ')
         component.features.add(0, 3, name='abc') # fine
         component.features.add(9, 5, name='error') # fine
-        component.features.add(6, 6, name='GHI..err') # fine
-        component.features.add(11, 6, name='ror..JKL') # fine
-        component.features.add(8, 7, name='I..error..J')
+        component.features.add(6, 6, name='GHI..err')
+        component.features.add(11, 6, name='ror..JKL')
+        component.features.add(8, 7, name='I..error..J') # fine
         component.features.add(29, 1, name='end') # fine
 
         mutated = component.mutate([DEL(9, 5)])
 
-        print(mutated.sequence)
-
-        for f in mutated.features:
-            print(f, f.sequence)
-
-
-        self.assertEqual(1, list(mutated.features))
+        self.assertEqual({'JKL', 'Z', 'ABC', 'GHI', 'IJ'}, set(str(f.sequence) for f in mutated.features))
 
         # TODO insert mutation (need to test mutation.size = 0)
         # TODO snp mutation (need to test link breaking).

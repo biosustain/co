@@ -245,7 +245,7 @@ class Component(Sequence):
             else:
                 try:
                     translated_start = tt.le(mutation.position)
-                    logging.debug('translated start: nonstrict=%s; strict=', translated_start, tt[mutation.position])
+                    logging.debug('translated start: nonstrict=%s; strict=%s', translated_start, tt[mutation.position])
                 except IndexError:
                     raise OverlapException()
 
@@ -299,13 +299,13 @@ class Component(Sequence):
                             tt[feature.start],
                             tt[mutation.start - 1]))  # tt[mutation.start] ?
 
-                        changed_features.add(feature.move(feature.start, mutation.start - 1))
+                        changed_features.add(feature.move(feature.start, mutation.start - feature.start))
                 else:  # mutation.start >= feature.start
 
                     if mutation.end < feature.end:
                         logging.debug('MFMF from {} to {}'.format(tt[mutation.end + 1], tt[feature.end]))
 
-                        changed_features.add(feature.move(mutation.end + 1, feature.end))
+                        changed_features.add(feature.move(mutation.end + 1, feature.end - mutation.end))
                     else:
                         pass # feature removed and not replaced.
                         logging.debug('MFFM feature removed')
@@ -399,7 +399,7 @@ class Component(Sequence):
 class _Feature(FeatureBase):
 
     def __init__(self, component, position, size, type=None, name=None, qualifiers=None, strand=FORWARD_STRAND, source=None, source_link_broken=False):
-        FeatureBase.__init__(component, position, size, strand)
+        super(_Feature, self).__init__(component, position, size, strand)
         self._type = type
         self._name = name
         self._qualifiers = qualifiers or {}
@@ -411,7 +411,7 @@ class _Feature(FeatureBase):
     size = property(fget=attrgetter('_size'))
     type = property(fget=attrgetter('_type'))
     name = property(fget=attrgetter('_name'))
-    strand = property(fget=attrgetter('_strand'))
+    # strand = property(fget=attrgetter('_strand'))
     source = property(fget=attrgetter('_source'))
     source_link_broken = property(fget=attrgetter('_source_link_broken'))
 
@@ -419,10 +419,10 @@ class _Feature(FeatureBase):
         # size = tt[self.end] - tt[self.start] + 1
         return self.move(tt[self.position], self.size, component=component)
 
-    def move(self, position, size, component=None):
+    def move(self, position, size=None, component=None):
         return _Feature((component or self._component),
                         position,
-                        size,
+                        size or self.size,
                         self._type,
                         self._name,
                         self._qualifiers,
@@ -438,4 +438,4 @@ class _Feature(FeatureBase):
         return self._type is None
 
     def __repr__(self):
-        return '<Feature:{} from {} to {}>'.format(self.type, self.start, self.end)
+        return '<Feature:{} from {} to {}>'.format(self.type or self.name, self.start, self.end)
