@@ -17,6 +17,7 @@ Testing plan:
 """
 from __future__ import unicode_literals
 from collections import Counter
+from itertools import permutations
 import logging
 import unittest
 from Bio.Alphabet import DNAAlphabet
@@ -25,9 +26,10 @@ import six
 from colib.components import Component
 from colib.converters import GenbankConverter, JSONConverter
 from colib.organisms import HaploidOrganism
+from colib.sequence import OverlapException, TranslationTable
 from colib.storage import Storage
 from colib.position import Range
-from colib.mutations import SNP, Mutation, DEL, INS, TranslationTable, SUB, OverlapException
+from colib.mutations import SNP, Mutation, DEL, INS, SUB
 
 
 class TranslationTableTestCase(unittest.TestCase):
@@ -144,25 +146,66 @@ class TranslationTableTestCase(unittest.TestCase):
         self.assertEqual(self.tt.target_size, 11)
         self.assertEqual([0, 1, 2, 3, 4, None, 7, 8, 9, 10], list(self.tt))
 
+    def test_component_mutate_1(self):
+        tt = TranslationTable(26)
+        self.assertEqual([(26, 0, 0)], tt.chain)
+        self.assertEqual(26, tt.target_size)
+
+        logging.warn('\n%s', tt.alignment_str())
+
+        tt.substitute(3, 1)
+        logging.warn('\n%s', tt.alignment_str())
+        self.assertEqual([(3, 1, 1), (22, 0, 0)], tt.chain)
+
+        tt.substitute(16, 1)
+        logging.warn('\n%s', tt.alignment_str())
+        self.assertEqual([(3, 1, 1), (12, 1, 1), (9, 0, 0)], tt.chain)
+
+        tt.delete(1, 1)
+        logging.warn('\n%s', tt.alignment_str())
+        self.assertEqual([(1, 0, 1), (2, 1, 1), (12, 1, 1), (9, 0, 0)], tt.chain)
+        self.assertEqual(25, tt.target_size)
+        logging.warn('\n%s', tt.alignment_str())
+
+        tt.insert(21, 2)
+        logging.warn('\n%s', tt.alignment_str())
+        self.assertEqual([(1, 0, 1), (2, 1, 1), (12, 1, 1), (3, 2, 0), (6, 0, 0)], tt.chain)
+        self.fail()
+
+        tt.delete(10, 9)
+        logging.warn('\n%s', tt.alignment_str())
+        tt.insert(10, 4)
+        logging.warn('\n%s', tt.alignment_str())
+     #   tt.substitute(4, 2)
+        logging.warn('\n%s', tt.alignment_str())
+        tt.delete(6, 1)
+        logging.warn('\n%s', tt.alignment_str())
+        tt.insert(6, 2)
+
+        self.assertEqual(None, list(tt.alignment()))
+        print(tt.__dict__)
+
     def test_substitute(self):
         pass
 
 class ComponentTestCase(unittest.TestCase):
 
     def test_mutate_1(self):
-        component = Component('ABCDEFGHIJKLMNOPQRSTUVXYZ')
+        component = Component('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+                                                             # .   .     .    .    .      .
+        mutated = component.mutate(                          # 0123456 78901234567890  12345
+            [SNP(3, 'd'),                                    # ABCdEFG HIJKLMNOPQRSTU  VWXYZ
+             SNP(16, 'q'),                                   # ABCdEFG HIJKLMNOPqRSTU  VWXYZ
+             DEL(1),                                         # A-CdEFG HIJKLMNOPqRSTU  VWXYZ
+             INS(21, 'xx'),                                  # A-CdEFG HIJKLMNOPqRSTUxxVWXYZ
+             Mutation(10, 9, 'oops'),                        # A-CdEFG HIJoops-----TUxxVWXYZ
+             SUB(4, 'ef'),                                   # A-CdefG HIJoops-----TUxxVWXYZ
+             Mutation(6, 1, 'Gg')]                           # A-CdefGgHIJoops-----TUxxVWXYZ
+        )                                                    # 0 1234567890123     457890123
+                                                             # .    .    .         .   .
 
-        mutated = component.mutate(                          # 0123456 78901234567890  1234
-            [SNP(3, 'd'),                                    # ABCdEFG HIJKLMNOPQRSTU  VXYZ
-             SNP(16, 'q'),                                   # ABCdEFG HIJKLMNOPqRSTU  VXYZ
-             DEL(1),                                         # A-CdEFG HIJKLMNOPqRSTU  VXYZ
-             INS(21, 'xx'),                                  # A-CdEFG HIJKLMNOPqRSTUxxVXYZ
-             Mutation(10, 9, 'oops'),                       # A-CdEFG HIJoops-----TUxxVXYZ
-             SUB(4, 'ef'),                                   # A-CdefG HIJoops-----TUxxVXYZ
-             Mutation(6, 1, 'Gg')]                           # A-CdefGgHIJoops-----TUxxVXYZ
-        )
 
-        self.assertEqual('ACdefGgHIJoopsTUxxVXYZ', six.text_type(mutated.sequence))
+        self.assertEqual('ACdefGgHIJoopsTUxxVWXYZ', six.text_type(mutated.sequence))
 
     def test_mutate_replace(self):
         self.assertEqual('01ttf2345', six.text_type(Component('012345').mutate([Mutation(1, 1, '1ttf')]).sequence))
@@ -227,10 +270,7 @@ class FeatureTestCase(unittest.TestCase):
         # 12|3xy4|5   12|3  |-5
         # 12|3xy|-5   12|3xy|-5
 
-
-        #(INS(3, 'xy'), DEL(3)), \
-
-        for order in [(DEL(3), INS(3, 'xy'))]:
+        for order in permutations([DEL(3), INS(3, 'xy')]):
             features = component.mutate(order, strict=False).features
             try:
                 print(str(list(features)[0].sequence), '<<<<<<<<<<<<<<<<<')
@@ -244,6 +284,10 @@ class FeatureTestCase(unittest.TestCase):
 
     def test_find_features(self):
         pass
+
+    def test_feature_reverse_strand(self):
+        pass
+
 
 
 

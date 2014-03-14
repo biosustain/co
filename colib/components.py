@@ -8,8 +8,7 @@ from Bio.Seq import Seq
 from blinker import Signal
 import six
 from colib.annotations import FeatureBase, FORWARD_STRAND
-from colib.mutations import TranslationTable, OverlapException
-from colib.sequence import Sequence
+from colib.sequence import Sequence, OverlapException, TranslationTable
 from colib.utils import SortedCollection
 
 
