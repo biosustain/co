@@ -99,7 +99,7 @@ class ComponentResource(ModelResource):
 
     @resource_method('GET')
     #@cache.memoize()
-    def GET_size(self, component):
+    def size(self, component):
         return component.size
 
 

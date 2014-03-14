@@ -58,6 +58,10 @@ class Component(db.Model):
 
     @hybrid_property
     def size(self):
+        return len(self.sequence)
+
+    @size.expression
+    def size(self):
         return func.length(self.sequence)
 
     def get_features(self, include_inherited=True):

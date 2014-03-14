@@ -55,6 +55,10 @@ class ServerTestCase(TestCase):
         self.assertEqual('AGATATATATACGAGAGCCC', self.client.get('/component/1/sequence').json)
         self.assertEqual('AAAATTTTGGGGCCCC', self.client.get('/component/5/sequence').json)
 
+    def test_size(self):
+        self.assertEqual(20, self.client.get('/component/1/size').json)
+        self.assertEqual(16, self.client.get('/component/5/size').json)
+
     def test_children(self):
          self.assertEqual(['/component/2'], self.client.get('/component/1/children').json)
          self.assertEqual([], self.client.get('/component/3/children').json)
