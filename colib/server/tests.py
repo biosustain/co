@@ -3,7 +3,7 @@ import logging
 import unittest
 from flask import json
 from flask.ext.testing import TestCase
-from colib.mutations import DEL
+from colib.mutations import DEL, INS
 from colib.server.models import db, Component, BoundFeature
 from colib.server.resources import ComponentResource
 import server
@@ -23,20 +23,19 @@ class ServerTestCase(TestCase):
             db.create_all()
 
             component = Component('AGATATATATACGAGAGCCC')
-            component_2 = Component('AGATATATAGAGCCC', parent=component)
-            feature_1 = BoundFeature(component=component, type='TATA_box', position=3, size=8)
-
+            component.added_features.append(BoundFeature(type='TATA_box', position=3, size=8))
+            component.added_features.append(BoundFeature(type=None, position=5, size=2))
             db.session.add(component)
-            db.session.add(feature_1)
-            db.session.add(BoundFeature(component=component, type=None, position=5, size=2))
-            #db.session.add(component.mutate([DEL(5, 2)]))
+            db.session.commit()
+
+            component_2 = component.mutate([DEL(5, 4)])
+            component_2.added_features.append(BoundFeature(type='gene', name='tesT', position=10, size=4))
             db.session.add(component_2)
+            db.session.commit()
 
-            component_2.removed_features.append(feature_1)
+            # component_2.removed_features.append(feature_1)
 
-            db.session.add(BoundFeature(component=component_2, type='gene', name='tesT', position=10, size=4))
-            db.session.add(Component('AGATATATAGAGCCCCCCC', parent=component_2))
-
+            db.session.add(component_2.mutate([INS(15, 'CCCC')]))
             db.session.commit()
 
             outer_component_1 = Component('ATGC')
@@ -57,6 +56,8 @@ class ServerTestCase(TestCase):
 
     def test_sequence(self):
         self.assertEqual('AGATATATATACGAGAGCCC', self.client.get('/component/1/sequence').json)
+        self.assertEqual('AGATATACGAGAGCCC', self.client.get('/component/2/sequence').json)
+        self.assertEqual('AGATATACGAGAGCCCCCCC', self.client.get('/component/3/sequence').json)
         self.assertEqual('AAAATTTTGGGGCCCC', self.client.get('/component/5/sequence').json)
 
     def test_size(self):
@@ -73,16 +74,41 @@ class ServerTestCase(TestCase):
         self.assertEqual([], self.client.get('/component/1/lineage?inclusive=False').json)
 
     def test_inherited_features(self):
-        self.assertEqual([{'position': 5,
-                           'resource_uri': '/feature/1.2t3',
-                           'type': None,
+
+        self.assertEqual([{'type': 'TATA_box',
                            'name': None,
-                           'size': 2},
-                          {'position': 10,
+                           'resource_uri': '/feature/1.1',
+                           'size': 8,
+                           'position': 3},
+                          {'name': None,
+                           'position': 5,
+                           'resource_uri': '/feature/1.2',
+                           'size': 2,
+                           'type': None}], self.client.get('/component/1/features').json)
+        # What is feature 3?
+
+        print(self.client.get('/component/2/features').json)
+        self.assertEqual([{'type': 'TATA_box',
+                           'size': 4,  # mid section deleted
+                           'resource_uri': '/feature/2.3',
+                           'position': 3,
+                           'name': None},
+                          {'type': 'gene',
+                           'size': 4,
+                           'resource_uri': '/feature/2.4',
+                           'position': 10,
+                           'name': 'tesT'}], self.client.get('/component/2/features').json)
+
+        self.assertEqual([{'name': None,
+                           'position': 3,
                            'resource_uri': '/feature/2.3t3',
-                           'type': 'gene',
-                           'name': 'tesT',
-                           'size': 4}], self.client.get('/component/3/features').json)
+                           'size': 4,
+                           'type': 'TATA_box'},
+                          {'type': 'gene',
+                           'size': 4,
+                           'resource_uri': '/feature/2.4t3',
+                           'position': 10,
+                           'name': 'tesT'}], self.client.get('/component/3/features').json)
 
     def test_added_features(self):
         self.assertEqual([{'size': 8,
@@ -115,13 +141,13 @@ class ServerTestCase(TestCase):
         self.assertEqual('AGTATACGAGAGCCC', self.client.get('/component/6/sequence').json)
         self.assertEqual([{'position': 2,
                            'new_sequence': '',
-                           'resource_uri': '/mutation/1',
+                           'resource_uri': '/mutation/3',
                            'size': 5}], self.client.get('/component/6/mutations').json)
 
         self.assertEqual(['/feature/1.1', '/feature/1.2'], self.client.get('/component/6/removed_features').json)
 
-        self.assertEqual([{'size': 10,
+        self.assertEqual([{'size': 4,
                            'position': 2,
-                           'resource_uri': '/feature/6.5',
+                           'resource_uri': '/feature/6.6',
                            'type': 'TATA_box',
                            'name': None}], self.client.get('/component/6/added_features').json)

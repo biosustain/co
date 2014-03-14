@@ -145,6 +145,8 @@ class Component(db.Model):
 
         component = Component(sequence=str(colib_mutated.sequence), parent=self)
 
+        db.session.add(component)
+
         for feature in colib_mutated.features.removed:
             component.removed_features.append(feature.record)
 
