@@ -22,8 +22,9 @@ class Sequence(object):
         return len(self.sequence)
 
 
-class OverlapException(Exception):
+class OverlapError(Exception):
     pass
+
 
 
 class TranslationTable(object):
@@ -31,23 +32,33 @@ class TranslationTable(object):
     Inspired by the UCSC chain format for pairwise alignments.
 
     http://genome.ucsc.edu/goldenPath/help/chain.html
+
+    .. attribute: source_start
+
+        The first position in the source sequence that aligns with the target sequence
+
+    .. attribute: source_end
+
+        The last position in the source sequence that aligns with the target sequence.
     """
 
     def __init__(self, size, changes=()):
-        self._source_size = size
-        self._target_size = size
-        self._chain = [(size, 0, 0)]  # (ungapped_size, ds, dt)
-        self._s_start, self._s_end = 0, size
-        self._t_start, self._t_end = 0, size
+        self.source_size = size
+        self.target_size = size
+        self.source_start, self.source_end = 0, size
+        self.target_start, self.target_end = 0, size
+        self.chain = [(size, 0, 0)]  # (ungapped_size, ds, dt)
 
-    def merge(cls, other):
+    def invert(self):
         """
-        Returns a single translation table that produces results equivalent to::
-
-            self[tt[pos]]
-
+        :returns: TranslationTable
         """
-        raise NotImplementedError()
+        tti = TranslationTable(self.target_size)
+        tti.target_size = self.source_size
+        tti.source_start, tti.source_end = self.target_start, self.target_end
+        tti.target_start, tti.target_end = self.source_start, self.source_end
+        tti.chain = [(ungapped_size, dt, ds) for ungapped_size, ds, dt in self.chain]
+        return tti
 
     @classmethod
     def from_mutations(cls, sequence, mutations, strict=True):
@@ -59,7 +70,7 @@ class TranslationTable(object):
             translated_start = tt[mutation.start]
 
             if translated_start is None:
-                raise OverlapException()
+                raise OverlapError()
 
             if insert_size != mutation.size:
                 tt.delete(translated_start, mutation.size)
@@ -74,37 +85,44 @@ class TranslationTable(object):
     def from_sequences(cls, reference, query, algorithm=None):
         raise NotImplementedError
 
-    def _insert_gap(self, position, source_gap, target_gap):
-        if 0 > position >= self._source_size:
+    def _insert_gap(self, position, source_gap, target_gap, strict):
+        if not 0 <= position <= self.source_size:
             raise IndexError()
 
         logging.debug('insert_gap: {} source gap: {}; target gap: {}'.format(position, source_gap, target_gap))
 
-        if position <= self._s_start:
-            first_ungapped_size, ds, dt = self._chain[0]
+        if position <= self.source_start:
+            first_ungapped_size, ds, dt = self.chain[0]
             if target_gap > first_ungapped_size:
-                raise OverlapException('Cannot insert gap at start: overlaps')
+                raise OverlapError('Cannot insert gap at start: overlaps')
 
-            if source_gap:
-                self._s_start += source_gap - target_gap
-                self._t_end += source_gap - target_gap
-            if target_gap:
-                self._t_start += target_gap - source_gap
-                self._s_end += target_gap - source_gap
+            self.source_start += target_gap
+            self.target_start += source_gap
 
-            self._target_size += source_gap - target_gap
+            self.target_size += source_gap - target_gap
             # TODO decrease size of ungapped alignment
 
-            self._chain[0] = first_ungapped_size - target_gap, ds, dt
+            self.chain[0] = first_ungapped_size - target_gap, ds, dt
 
             return
 
-        elif position >= self._s_end:
-            raise NotImplementedError()
-        else:
-            offset = self._s_start
+        elif position >= self.source_end:
 
-            for i, (ungapped_size, ds, dt) in enumerate(self._chain):
+            # only the exact position is legal for inserting at the end of the source sequence.
+            if position == self.source_size:
+                if target_gap:  # cannot delete what is not there:
+                    raise IndexError()
+
+                self.target_size += source_gap
+
+                return
+
+            # TODO OverlapError if non-strict
+
+        else:
+            offset = self.source_start
+
+            for i, (ungapped_size, ds, dt) in enumerate(self.chain):
                 print(i, position, ungapped_size, ds, dt)
 
                 gap_start = offset + ungapped_size
@@ -114,20 +132,45 @@ class TranslationTable(object):
                 #    raise NotImplementedError()
                 if offset < position < gap_start:
                     gap_offset = position - offset
+                    ungapped_remainder = ungapped_size - gap_offset - target_gap
+
+                    if ungapped_remainder < 0:
+                        if strict:
+                            raise OverlapError('Deletion at {} '
+                                               'extends to following gap at {}'.format(position, position + target_gap))
+                        else:
+                            pass
+                            # FIXME, eat up ungapped size up to the size of target_gap
+                            #raise NotImplementedError()
+                    elif ungapped_remainder == 0:  # merge chain tuples.
+
+                        logging.debug(self.__dict__)
+                        #raise NotImplementedError()
+
                     logging.warn(gap_offset)
-                    self._chain.insert(i, (gap_offset, source_gap, target_gap))
-                    self._chain[i + 1] = (ungapped_size - gap_offset - (source_gap - target_gap) - 1, ds, dt)
+                    self.chain.insert(i, (gap_offset, source_gap, target_gap))
+                    self.chain[i + 1] = (ungapped_remainder, ds, dt)
                     break
                 if position == gap_start:
                     # if ds and source_gap or dt and target_gap:
                     #     logging.debug(self.__dict__)
                     #     # allow for max one insertion and one deletion per coordinate:
-                    #     raise OverlapException('Cannot insert gap at {}: '
-                    #                            'Gap of the same type already starting at this position.'.format(position))
-                    self._chain[i] = (ungapped_size, ds + source_gap, dt + target_gap)
+
+                    # (source gap == insertion) an additional insertion is unusual and forbidden in strict mode
+                    if strict and ds and source_gap:
+                        raise OverlapError('Cannot insert gap at {}: '
+                                           'Source sequence gap already present at this position.'.format(position))
+
+                    # (target gap == deletion) deletion of an already deleted area is impossible and therefore raises
+                    # an error
+                    if dt and target_gap:
+                        raise OverlapError('Cannot insert gap at {}: '
+                                           'Target sequence gap already present at this position.'.format(position))
+
+                    self.chain[i] = (ungapped_size, ds + source_gap, dt + target_gap)
                     break
                 elif position < source_gap_end:
-                    raise OverlapException('Cannot insert gap at {}: '
+                    raise OverlapError('Cannot insert gap at {}: '
                                            'Gap already present from {} to {}'.format(position,
                                                                                       gap_start,
                                                                                       source_gap_end))
@@ -137,57 +180,83 @@ class TranslationTable(object):
             logging.debug('inserted gaps; source: %s, target: %s; target size: %s -> %s',
                           source_gap,
                           target_gap,
-                          self._target_size,
-                          self._target_size + source_gap - target_gap)
+                          self.target_size,
+                          self.target_size + source_gap - target_gap)
 
             # FIXME failure case first?
-            self._target_size += source_gap - target_gap
+            self.target_size += source_gap - target_gap
 
             if source_gap:
-                self._t_end += source_gap - target_gap
+                self.target_end += source_gap - target_gap
             if target_gap:
-                self._s_end += target_gap - source_gap
+                # FIXME more complicated than this
+                self.source_end += target_gap - source_gap
 
-    def insert(self, position, size):
-        self._insert_gap(position, size, 0)
-
-    def delete(self, position, size):
-        self._insert_gap(position, 0, size)
-
-    def substitute(self, position, size):
-        self._insert_gap(position, size, size)
-
-    @property
-    def chain(self):
-        return list(self._chain)
-
-    @property
-    def source_size(self):
-        return self._source_size
-
-    @property
-    def target_size(self):
-        return self._target_size
-
-    def le(self, position): # FIXME horrible le implementation.
+    def insert(self, position, size, strict=True):
         """
+        When a sequence is inserted in the target sequence, this results in a gap in the alignment of the
+        source sequence. The size of the target sequence also increases.
+
+        The following edge cases occur:
+            - If the insertion happens at position 0, no gap will be inserted, but the start of the source alignment
+            is increased.
+            - If the insertion happens at the end of the source sequence, likewise, the end of the source alignment
+            increases. In both cases the size of the source sequence stays the same.
+            - If the insertion happens inside a gap in the source sequence, or within the source sequence,
+              the size of the source gap is increased unless `strict` is `True`, in which case an error is raised.
+            - If the insertion happens inside a gap in the target sequence, an error is raised.
+        """
+        self._insert_gap(position, size, 0, strict)
+
+    def delete(self, position, size, strict=True):
+        self._insert_gap(position, 0, size, strict)
+
+    def substitute(self, position, size, strict=True):
+        self._insert_gap(position, size, size, strict)
+
+    def le(self, position):
+        """
+
+        :func:`le()` attempts to return the coordinate in the target sequence that corresponds to the `position`
+        parameter in the source sequence. If `position` falls into a gap in the target sequence, it will instead return
+        the last coordinate in front of that gap.
+
+        An `IndexError` is raised if the `position` does not exist in the source or if it maps to a coordinate before
+        the start of the target sequence alignment.
+
+        The result of the function is identical to the following implementation, but is more efficient::
+
+            while True:
+                target_position = self[position]
+                if target_position is not None:
+                    return target_position
+                position -= 1
+
         :returns: the first position, equal or lower than `position` that exists in the query sequence.
         """
         while True:
-            query_position = self[position]
-            if query_position is not None:
-                return query_position
+            target_position = self[position]
+            if target_position is not None:
+                return target_position
             position -= 1
 
-    def ge(self, position): # FIXME horrible ge implementation.
+    def ge(self, position):
         """
         :returns: the first position, equal or greater than `position` that exists in the query sequence.
+        :raises: IndexError
         """
         while True:
             query_position = self[position]
             if query_position is not None:
                 return query_position
             position += 1
+
+    @property
+    def total_ungapped_size(self):
+        """
+
+        """
+        return sum(ungapped_size for ungapped_size, ds, dt in self.chain)
 
     def alignment(self):
         """
@@ -196,30 +265,30 @@ class TranslationTable(object):
         :returns: an iterator over all coordinates in both the source and target sequence.
         """
         def source():
-            offset = 0
-            for ungapped_size, ds, dt in self._chain:
+            offset = self.source_start
+            for ungapped_size, ds, dt in self.chain:
                 for i in range(ungapped_size):
-                    yield offset + i
+                    yield offset + i, ' '
                 for i in range(dt):
-                    yield offset + ungapped_size + i
+                    yield offset + ungapped_size + i, '*'
                 for i in range(ds):
                     yield None
-                offset += ungapped_size + dt + 1
+                offset += ungapped_size + dt
 
         def target():
-            offset = 0
-            for ungapped_size, ds, dt in self._chain:
+            offset = self.target_start
+            for ungapped_size, ds, dt in self.chain:
                 for i in range(ungapped_size):
-                    yield offset + i
+                    yield offset + i, ' '
                 for i in range(ds):
-                    yield offset + ungapped_size + i
+                    yield offset + ungapped_size + i, '*'
                 for i in range(dt):
                     yield None
-                offset += ungapped_size + ds + 1
+                offset += ungapped_size + ds
 
         return zip(
-            chain(repeat(None, self._s_start), source()),
-            chain(repeat(None, self._t_start), target())
+            chain(repeat(None, self.source_start), source()),
+            chain(repeat(None, self.target_start), target())
         )
 
     def alignment_str(self):
@@ -227,8 +296,8 @@ class TranslationTable(object):
         logging.debug(self.__dict__)
 
         for s, t in self.alignment():
-            s_str += ' {:3d}'.format(s) if s is not None else '   -'
-            t_str += ' {:3d}'.format(t) if t is not None else '   -'
+            s_str += ' {:3d}{}'.format(*s) if s is not None else '   - '
+            t_str += ' {:3d}{}'.format(*t) if t is not None else '   - '
 
         return s_str + '\n' + t_str
 
@@ -239,18 +308,18 @@ class TranslationTable(object):
         :returns: The new coordinate as an `int`, if it exists; `None` otherwise.
         :raises IndexError: If the coordinate does not exist in the original system
         """
-        if position >= self._source_size or position < 0:
+        if not 0 <= position < self.source_size:
             raise IndexError()
 
-        if position < self._t_start:  # beginning of query was deleted.
+        if position < self.source_start: # beginning of query was deleted.
             return None
 
-        if position >= self._t_end:  # end of query was deleted.
+        if position >= self.source_end:  # end of query was deleted.
             return None
 
-        offset = 0
-        target_offset = self._s_start - self._t_start
-        for ungapped_size, ds, dt in self._chain:
+        offset = self.source_start
+        target_offset =  self.target_start
+        for ungapped_size, ds, dt in self.chain:
             gap_start = offset + ungapped_size
             source_gap_end = gap_start + ds
             target_gap_end = gap_start + dt # NOTE might be ds
@@ -281,6 +350,6 @@ class TranslationTable(object):
 
     def __len__(self, other):
         """
-        Returns the length of the sequence in the old coordinate system.
+        :returns: the length of the sequence in the source coordinate system.
         """
-        return self._source_size
+        return self.source_size

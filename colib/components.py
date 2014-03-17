@@ -8,7 +8,7 @@ from Bio.Seq import Seq
 from blinker import Signal
 import six
 from colib.annotations import FeatureBase, FORWARD_STRAND
-from colib.sequence import Sequence, OverlapException, TranslationTable
+from colib.sequence import Sequence, OverlapError, TranslationTable
 from colib.utils import SortedCollection
 
 
@@ -246,7 +246,7 @@ class Component(Sequence):
                     translated_start = tt.le(mutation.position)
                     logging.debug('translated start: nonstrict=%s; strict=%s', translated_start, tt[mutation.position])
                 except IndexError:
-                    raise OverlapException()
+                    raise OverlapError()
 
             # TODO strict mode implementation that also fires on other overlaps.
 
@@ -263,7 +263,7 @@ class Component(Sequence):
             logging.debug('alignment: \n%s', tt.alignment_str())
 
             if translated_start is None:
-                raise OverlapException()
+                raise OverlapError()
 
             logging.debug('new features: {}'.format(list(features)))
             logging.info('features in mutation: {}'.format(affected_features))
