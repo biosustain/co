@@ -16,5 +16,8 @@ setup(
         'Flask-Presst>=0.2.2',
         'biopython>=1.62',
         'blinker>=1.3',
-    ]
+    ],
+    extras_require={
+        'docs': ['Sphinx', 'sphinx-rtd-theme'],
+    }
 )

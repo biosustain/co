@@ -3,25 +3,45 @@ import logging
 
 
 class OverlapError(Exception):
+    """
+    This :class:`Exception` is raised when a mutation is applied to a position in a sequence that no longer
+    exists because of a previous mutation.
+
+    In *strict mode*, an :class:`OverlapError` is fired more frequently, such as when a deletion is applied to a range
+    that has previously been modified by an insertion. In general, *strict mode* should be used when working
+    with data from a single source of variant calls.
+    """
     pass
 
 
 class TranslationTable(object):
     """
-    Inspired by the UCSC chain format for pairwise alignments.
+    :param size: the length of the source sequence
 
-    http://genome.ucsc.edu/goldenPath/help/chain.html
+    This class is inspired by the UCSC chain format for pairwise alignments documented here:
 
-    .. attribute: source_start
+        http://genome.ucsc.edu/goldenPath/help/chain.html
+
+
+    :class:`TranslationTable` encodes an alignment between two sequences, *source* and *target*, as a result
+    of a sequence of mutations. Each mutation is either a `delete`, `insert`, or `substitute` operation where
+    `substitute` is shorthand for a deletion followed by an insertion of equal size.
+
+    .. attribute:: source_start
 
         The first position in the source sequence that aligns with the target sequence
 
-    .. attribute: source_end
+    .. attribute:: source_end
 
         The last position in the source sequence that aligns with the target sequence.
     """
 
-    def __init__(self, size, changes=()):
+    def __init__(self, size):
+        """
+        test
+
+        :param size: length of the source sequence
+        """
         self.source_size = size
         self.target_size = size
         self.source_start, self.source_end = 0, size
@@ -30,7 +50,9 @@ class TranslationTable(object):
 
     def invert(self):
         """
-        :returns: TranslationTable
+        Creates a copy of the :class:`TranslationTable` where *source* and *target* are inverted.
+
+        :returns: a new :class:`TranslationTable` object.
         """
         tti = TranslationTable(self.target_size)
         tti.target_size = self.source_size
@@ -41,10 +63,14 @@ class TranslationTable(object):
 
     @classmethod
     def from_mutations(cls, sequence, mutations, strict=True):
+        """
+        :param sequence: the *source* sequence
+        :param mutations: iterable of :class:`Mutation` objects
+        :param strict: whether to use strict mode
+        """
         tt = TranslationTable(len(sequence))
-        resolved_mutations = map(lambda m: m.resolve(sequence), mutations)
 
-        for mutation in resolved_mutations:
+        for mutation in mutations:
             insert_size = len(mutation.new_sequence)
             translated_start = tt[mutation.start]
 
@@ -52,11 +78,11 @@ class TranslationTable(object):
                 raise OverlapError()
 
             if insert_size != mutation.size:
-                tt.delete(translated_start, mutation.size)
+                tt.delete(translated_start, mutation.size, strict)
                 if insert_size != 0:
-                    tt.insert(translated_start, insert_size)
+                    tt.insert(translated_start, insert_size, strict)
             else:
-                tt.substitute(translated_start, mutation.size)
+                tt.substitute(translated_start, mutation.size, strict)
 
         return tt
 
@@ -177,13 +203,16 @@ class TranslationTable(object):
         source sequence. The size of the target sequence also increases.
 
         The following edge cases occur:
-            - If the insertion happens at position 0, no gap will be inserted, but the start of the source alignment
-            is increased.
-            - If the insertion happens at the end of the source sequence, likewise, the end of the source alignment
-            increases. In both cases the size of the source sequence stays the same.
-            - If the insertion happens inside a gap in the source sequence, or within the source sequence,
-              the size of the source gap is increased unless `strict` is `True`, in which case an error is raised.
-            - If the insertion happens inside a gap in the target sequence, an error is raised.
+
+        - If the insertion happens at position 0, no gap will be inserted, but the start of the source alignment
+          is increased.
+        - If the insertion happens at the end of the source sequence, likewise, the end of the source alignment
+          increases. In both cases the size of the source sequence stays the same.
+        - If the insertion happens inside a gap in the source sequence, or within the source sequence,
+          the size of the source gap is increased unless `strict` is `True`, in which case an error is raised.
+        - If the insertion happens inside a gap in the target sequence, an error is raised.
+
+
         """
         self._insert_gap(position, size, 0, strict)
 
@@ -233,13 +262,15 @@ class TranslationTable(object):
     @property
     def total_ungapped_size(self):
         """
-
+        The total length of the alignment between source and target.
         """
         return sum(ungapped_size for ungapped_size, ds, dt in self.chain)
 
     def alignment(self):
         """
-        Returns an iterator yielding tuples in the form (source, target)
+        Returns an iterator yielding tuples in the form ``(source, target)``.
+
+        This function should only be used for debugging.
 
         :returns: an iterator over all coordinates in both the source and target sequence.
         """
