@@ -8,7 +8,7 @@ from Bio.Seq import Seq
 from blinker import Signal
 import six
 from colib.annotations import FeatureBase, FORWARD_STRAND
-from colib.sequence import Sequence, OverlapError, TranslationTable
+from colib.sequence import OverlapError, TranslationTable
 from colib.utils import SortedCollection
 
 
@@ -102,7 +102,7 @@ class _FeatureList(object):
                 yield f
 
 
-class Component(Sequence):
+class Component(object):
     """
     If the underlying library supports it, mutated `Component` objects can be stored as a set of the features
     that have been added or removed from the parent component. It is recommended that the library implements a

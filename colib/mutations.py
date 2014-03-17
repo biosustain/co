@@ -1,6 +1,5 @@
+import Bio
 import six
-
-from colib.sequence import Sequence
 
 
 class Mutation(object):
@@ -20,7 +19,7 @@ class Mutation(object):
 
     """
     def __init__(self, position, size, new_sequence=''):
-        assert isinstance(new_sequence, (six.string_types, Sequence))
+        assert isinstance(new_sequence, (six.string_types, Bio.Seq))
         self.position = int(position)
         self.size = int(size)
         self.new_sequence = new_sequence
