@@ -4,18 +4,34 @@ import six
 
 class Mutation(object):
     """
-
     DELINS does not have its own native Mutation class. These are best implemented in
     third-party libraries or using Mutation directly.
 
-    A Mutation(start, end, new_sequence) is similar to the two derived mutations which however
+    A ``Mutation(start, end, new_sequence)`` is similar to the two derived mutations which however
     do not account for substitutions::
 
         DEL(start, end - start + 1), INS(start, new_sequence, replace=True)
 
-    Mutation are stored as (position, size) pairs because (start, end) pairs do not allow for a proper zero-length
-    mutation as it would be seen in an insertion. It is possible to simulate an insertion by keeping one character of
-    the original sequence, but that would add ambiguity to the exact site of the mutated sequence.
+    Mutation are stored as ``(position, size)`` pairs because ``(start, end)`` pairs do not allow for a proper
+    zero-length mutation as it would be seen in an insertion. It is possible to simulate an insertion by keeping one
+    character of the original sequence, but that would add ambiguity to the exact site of the mutated sequence.
+
+    :param int position: start index
+    :param int size: length of deletion
+    :param new_sequence: insertion sequence
+    :type new_sequence: str or Bio.Seq
+
+    .. attribute:: new_sequence
+
+        Replacement sequence inserted at :attr:`position`.
+
+    .. attribute:: size
+
+        Length of the stretch of original sequence that is deleted at :attr:`position`.
+
+    .. attribute:: position
+
+        Start index of the mutation, zero-based.
 
     """
     def __init__(self, position, size, new_sequence=''):
@@ -36,6 +52,9 @@ class Mutation(object):
 
     @property
     def new_size(self):
+        """
+        The length of :attr:`new_sequence`
+        """
         return len(self.new_sequence)
 
     def is_substitution(self):
@@ -84,9 +103,13 @@ class DEL(Mutation):
 
 
 class INS(Mutation):
+    """
+
+    :param int pos: zero-based insertion index
+    :param new_sequence: insertion sequence
+    :type new_sequence: str or Bio.Seq
+    :param bool replace: if ``True``, eliminates the original character at the position. Some variant call formats keep
+        the first character of the original sequence in the replacement sequence.
+    """
     def __init__(self, pos, new_sequence, replace=False):
-        """
-        :param replace: if `True`, eliminates the original character at the position. Some variant call formats keep
-            the first character of the original sequence in the replacement sequence.
-        """
         super(INS, self).__init__(pos, int(replace), new_sequence)

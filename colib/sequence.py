@@ -75,7 +75,10 @@ class TranslationTable(object):
             translated_start = tt[mutation.start]
 
             if translated_start is None:
-                raise OverlapError()
+                if strict:
+                    raise OverlapError()
+
+                translated_start = tt.le(translated_start)
 
             if insert_size != mutation.size:
                 tt.delete(translated_start, mutation.size, strict)
@@ -224,25 +227,15 @@ class TranslationTable(object):
 
     def le(self, position):
         """
-
         :func:`le()` attempts to return the coordinate in the target sequence that corresponds to the `position`
         parameter in the source sequence. If `position` falls into a gap in the target sequence, it will instead return
         the last coordinate in front of that gap.
 
-        An `IndexError` is raised if the `position` does not exist in the source or if it maps to a coordinate before
-        the start of the target sequence alignment.
-
-        The result of the function is identical to the following implementation, but is more efficient::
-
-            while True:
-                target_position = self[position]
-                if target_position is not None:
-                    return target_position
-                position -= 1
-
+        :raises IndexError: if `position` does not exist in the source or if it maps to a coordinate before
+            the start of the target sequence alignment.
         :returns: the first position, equal or lower than `position` that exists in the query sequence.
         """
-        while True:
+        while True:  # TODO a more efficient le() implementation
             target_position = self[position]
             if target_position is not None:
                 return target_position
@@ -250,8 +243,15 @@ class TranslationTable(object):
 
     def ge(self, position):
         """
+
+        .. seealso::
+
+            The :func:`.le()` function.
+
+
+        :raises IndexError: if `position` does not exist in the source or if it maps to a coordinate after
+            the end of the target sequence alignment.
         :returns: the first position, equal or greater than `position` that exists in the query sequence.
-        :raises: IndexError
         """
         while True:
             query_position = self[position]
@@ -269,8 +269,6 @@ class TranslationTable(object):
     def alignment(self):
         """
         Returns an iterator yielding tuples in the form ``(source, target)``.
-
-        This function should only be used for debugging.
 
         :returns: an iterator over all coordinates in both the source and target sequence.
         """
@@ -302,6 +300,13 @@ class TranslationTable(object):
         )
 
     def alignment_str(self):
+        """
+        Returns a string representation of the alignment between `source` and `target` coordinates.
+
+        .. warning::
+            This function should only be used for debugging purposes.
+
+        """
         s_str, t_str = '', ''
         logging.debug(self.__dict__)
 
