@@ -12,9 +12,10 @@ class Mutation(object):
 
         DEL(start, end - start + 1), INS(start, new_sequence, replace=True)
 
-    Mutation are stored as ``(position, size)`` pairs because ``(start, end)`` pairs do not allow for a proper
-    zero-length mutation as it would be seen in an insertion. It is possible to simulate an insertion by keeping one
-    character of the original sequence, but that would add ambiguity to the exact site of the mutated sequence.
+    .. note::
+        Mutation are stored as ``(position, size)`` pairs because ``(start, end)`` pairs do not allow for
+        unambiguous zero-length mutations (i.e. insertions). It is possible to simulate an insertion by keeping one
+        character of the original sequence, but that would add ambiguity to the exact site of the mutated sequence.
 
     :param int position: start index
     :param int size: length of deletion
