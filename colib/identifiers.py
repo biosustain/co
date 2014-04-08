@@ -8,7 +8,8 @@ class UniqueIdentifier(object):
         self.identifier = identifier
 
 
-class Version(object): pass
+class Version(object):
+    pass
 
 
 class DatabaseXRef(UniqueIdentifier):
