@@ -96,6 +96,8 @@ class TranslationTable(object):
     def _insert_gap(self, position, source_gap, target_gap, strict):
         if not 0 <= position <= self.source_size:
             raise IndexError()
+        if not position + target_gap - 1 <= self.source_size:
+            raise IndexError()
 
         logging.debug('insert_gap: {} source gap: {}; target gap: {}'.format(position, source_gap, target_gap))
 
@@ -136,24 +138,24 @@ class TranslationTable(object):
                 gap_start = offset + ungapped_size
                 source_gap_end = gap_start + dt #- ds# NOTE might be ds
 
+                logging.debug('source_gap_end={}; ({}) gap_start={}, dt={}, ds={}'.format(source_gap_end, position, gap_start, dt, ds))
                 #if position == offset:
                 #    raise NotImplementedError()
+
                 if offset < position < gap_start:
                     gap_offset = position - offset
                     ungapped_remainder = ungapped_size - gap_offset - target_gap
 
-                    if ungapped_remainder < 0:
-                        if strict:
-                            raise OverlapError('Deletion at {} '
-                                               'extends to following gap at {}'.format(position, position + target_gap))
-                        else:
-                            pass
-                            # FIXME, eat up ungapped size up to the size of target_gap
-                            #raise NotImplementedError()
-                    elif ungapped_remainder == 0:  # merge chain tuples.
+                    logging.debug('ungapped_remainder={}'.format(ungapped_remainder))
 
-                        logging.debug(self.__dict__)
-                        #raise NotImplementedError()
+                    if ungapped_remainder < 0:
+                        raise OverlapError('Deletion at {} '
+                                           'extends to following gap at {}'.format(position, position + target_gap))
+
+                    elif ungapped_remainder == 0:  # reuse existing chain tuple
+                        self.chain[i] = (gap_offset, ds + source_gap, dt + target_gap)
+                        break
+
 
                     logging.warn(gap_offset)
                     self.chain.insert(i, (gap_offset, source_gap, target_gap))
@@ -178,10 +180,28 @@ class TranslationTable(object):
                     self.chain[i] = (ungapped_size, ds + source_gap, dt + target_gap)
                     break
                 elif position < source_gap_end:
+                    logging.debug(self.__dict__)
+                    logging.debug('position={}, {} {}; offset={}'.format(position, source_gap, target_gap, offset))
+                    logging.debug('source_gap_end={}; gap_start={}, dt={}, ds={}'.format(source_gap_end, gap_start, dt, ds))
                     raise OverlapError('Cannot insert gap at {}: '
                                            'Gap already present from {} to {}'.format(position,
                                                                                       gap_start,
                                                                                       source_gap_end))
+
+                elif position == source_gap_end:
+                    next_ungapped_size, next_ds, next_dt = self.chain[i + 1]
+                    ungapped_remainder = next_ungapped_size - target_gap
+
+                    if ungapped_remainder < 0:
+                        raise OverlapError('Deletion at {} '
+                                           'extends to following gap at {}'.format(position, position + target_gap))
+                    elif ungapped_remainder == 0:  # reuse existing chain tuple
+                        self.chain[i] = (ungapped_size, ds + source_gap + next_ds, dt + target_gap + next_dt)
+                        self.chain.pop(i + 1)
+                    else:
+                        self.chain[i] = (ungapped_size, ds + source_gap, dt + target_gap)
+                        self.chain[i + 1] = (ungapped_remainder, next_ds, next_dt)
+                    break
 
                 offset = source_gap_end
 

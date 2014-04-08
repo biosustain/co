@@ -40,7 +40,6 @@ class TranslationTableTestCase(unittest.TestCase):
         with self.assertRaises(IndexError):
             self.tt.insert(11, 1)
 
-
     def test_insert_before_end(self):
         self.tt.insert(9, 5)
         self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 14], list(self.tt))
@@ -171,46 +170,42 @@ class TranslationTableTestCase(unittest.TestCase):
         self.assertEqual([(26, 0, 0)], tt.chain)
         self.assertEqual(26, tt.target_size)
 
-        logging.warn('\n%s', tt.alignment_str())
-
         tt.substitute(3, 1)
-        logging.warn('\n%s', tt.alignment_str())
         self.assertEqual([(3, 1, 1), (22, 0, 0)], tt.chain)
 
-        tt.substitute(16, 1)
-        logging.warn('\n%s', tt.alignment_str())
-        self.assertEqual([(3, 1, 1), (12, 1, 1), (9, 0, 0)], tt.chain)
-
         tt.delete(1, 1)
-        logging.warn('\n%s', tt.alignment_str())
-        self.assertEqual([(1, 0, 1), (1, 1, 1), (12, 1, 1), (9, 0, 0)], tt.chain)
+        self.assertEqual([(1, 0, 1), (1, 1, 1), (22, 0, 0)], tt.chain)
         self.assertEqual(25, tt.target_size)
-        logging.warn('\n%s', tt.alignment_str())
 
         tt.insert(21, 2)
-        self.assertEqual([(1, 0, 1), (1, 1, 1), (12, 1, 1), (4, 2, 0), (5, 0, 0)], tt.chain)
+        self.assertEqual([(1, 0, 1), (1, 1, 1), (17, 2, 0), (5, 0, 0)], tt.chain)
 
-        tt.delete(10, 9, strict=False)  # OverlapError: Deletion at 10 extends to following gap at 19
-        logging.warn('\n%s', tt.alignment_str())
-        self.assertEqual([(1, 0, 1), (1, 1, 1), (12, 1, 1), (4, 2, 0), (5, 0, 0)], tt.chain)
+        tt.delete(10, 9)
+        self.assertEqual([(1, 0, 1), (1, 1, 1), (6, 0, 9), (2, 2, 0), (5, 0, 0)], tt.chain)
 
         tt.insert(10, 4)
+        self.assertEqual([(1, 0, 1), (1, 1, 1), (6, 4, 9), (2, 2, 0), (5, 0, 0)], tt.chain)
 
-
-        self.assertEqual([(1, 0, 1), (1, 1, 1), (12, 1, 1), (4, 2, 0), (5, 0, 0)], tt.chain)
-        logging.warn('\n%s', tt.alignment_str())
         tt.substitute(4, 2)
-        logging.warn('\n%s', tt.alignment_str())
-
-        tt.delete(6, 1)
-        logging.warn('\n%s', tt.alignment_str())
-        self.assertEqual([(1, 0, 1), (1, 1, 1), (12, 1, 1), (4, 2, 0), (5, 0, 0)], tt.chain)
+        self.assertEqual([(1, 0, 1), (1, 3, 3), (4, 4, 9), (2, 2, 0), (5, 0, 0)], tt.chain)
 
         tt.insert(6, 2)
-        self.assertEqual([(1, 0, 1), (1, 1, 1), (12, 1, 1), (4, 2, 0), (5, 0, 0)], tt.chain)
+        self.assertEqual([(1, 0, 1), (1, 5, 3), (4, 4, 9), (2, 2, 0), (5, 0, 0)], tt.chain)
 
-        self.assertEqual(None, list(tt.alignment()))
-        print(tt.__dict__)
+        self.assertEqual([0, None, 1, None, None, None, 7, 8, 9, 10, None, None, None,
+                          None, None, None, None, None, None, 15, 16, 19, 20, 21, 22, 23], list(tt))
+
+    def test_zero_gap_merge(self):
+        tt = TranslationTable(10)
+
+        tt.delete(5, 2)
+        self.assertEqual([(5, 0, 2), (3, 0, 0)], tt.chain)
+        self.assertEqual([0, 1, 2, 3, 4, None, None, 5, 6, 7], list(tt))
+
+        tt.delete(3, 2)
+        self.assertEqual([(3, 0, 4), (3, 0, 0)], tt.chain)
+        self.assertEqual([0, 1, 2, None, None, None, None, 3, 4, 5], list(tt))
+        self.assertEqual([0, 1, 2, 7, 8, 9], list(tt.invert()))
 
     def test_substitute(self):
         pass

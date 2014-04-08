@@ -11,15 +11,13 @@ class ComponentTestCase(unittest.TestCase):
                                                              # .   .     .    .    .      .
         mutated = component.mutate(                          # 0123456 78901234567890  12345
             [SNP(3, 'd'),                                    # ABCdEFG HIJKLMNOPQRSTU  VWXYZ
-             SNP(16, 'q'),                                   # ABCdEFG HIJKLMNOPqRSTU  VWXYZ
-             DEL(1),                                         # A-CdEFG HIJKLMNOPqRSTU  VWXYZ
-             INS(21, 'xx'),                                  # A-CdEFG HIJKLMNOPqRSTUxxVWXYZ
+             DEL(1),                                         # A-CdEFG HIJKLMNOPQRSTU  VWXYZ
+             INS(21, 'xx'),                                  # A-CdEFG HIJKLMNOPQRSTUxxVWXYZ
              Mutation(10, 9, 'oops'),                        # A-CdEFG HIJoops-----TUxxVWXYZ
              SUB(4, 'ef'),                                   # A-CdefG HIJoops-----TUxxVWXYZ
              Mutation(6, 1, 'Gg')],                          # A-CdefGgHIJoops-----TUxxVWXYZ
         strict=False)                                        # 0 1234567890123     457890123
                                                              # .    .    .         .   .
-
 
         self.assertEqual('ACdefGgHIJoopsTUxxVWXYZ', six.text_type(mutated.sequence))
 
