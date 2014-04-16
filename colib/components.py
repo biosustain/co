@@ -3,13 +3,15 @@ from collections import namedtuple
 import functools
 import heapq
 import logging
+import blist
 from operator import attrgetter
+from Bio import Alphabet
 from Bio.Seq import Seq
 from blinker import Signal
 import six
 from colib.annotations import FeatureBase, FORWARD_STRAND
+from colib.interval import IntervalTree
 from colib.sequence import OverlapError, TranslationTable
-from colib.utils import SortedCollection
 
 
 def diff(original, other):
@@ -17,26 +19,26 @@ def diff(original, other):
         return original._mutations
     raise NotImplementedError()  # TODO if original.inherits(other)
 
-class _FeatureList(object):
+class _FeatureSet(object):
 
     def __init__(self, component, parent=None, feature_class=None):
         self._feature_class = feature_class or _Feature
-        self._component = component
-        self._features = SortedCollection(key=attrgetter('position'))
-        self._features_from_end = SortedCollection(key=attrgetter('end'))
+        self._features = IntervalTree()
         self._removed_features = set()
+        self._component = component
         self._parent_feature_list = parent
 
-    def intersect(self, start, end, include_inherited=True):
+    def overlap(self, start, end, include_inherited=True):
         if start > end:
             return set()
 
-        # TODO this intersect lookup requires optimization.
-        intersect = set(self._features_from_end.filter_ge(start)) & set(self._features.filter_le(end))
+        # TODO this overlap lookup requires optimization.
+        #overlap = set(self._features_from_end.filter_ge(start)) & set(self._features.filter_le(end))
+        intersect = set(self._features.overlap(start, end))
 
         if self._parent_feature_list and include_inherited:
-            logging.debug('intersect({}, {}): inherited between {} and {}'.format(start, end, self._tt.ge(start), self._tt.le(end)))
-            intersect |= self._parent_feature_list.intersect(self._tt.ge(start), self._tt.le(end)) - self._removed_features
+            logging.debug('overlap({}, {}): inherited between {} and {}'.format(start, end, self._tt.ge(start), self._tt.le(end)))
+            intersect |= self._parent_feature_list.overlap(self._tt.ge(start), self._tt.le(end)) - self._removed_features
         return intersect
 
     def find(self, *args, **kwargs):
@@ -55,15 +57,15 @@ class _FeatureList(object):
         return feature
 
     def _insert(self, feature):
-        self._features.insert(feature)
-        self._features_from_end.insert(feature)
+        self._features.add(feature)
+        #self._features_from_end.insert(feature)
 
     def remove(self, feature):
         """
         """
         if feature in self._features:
             self._features.remove(feature)
-            self._features_from_end.remove(feature)
+            # self._features_from_end.remove(feature)
         elif self._parent_feature_list:
             self._removed_features.add(feature)
         else:
@@ -102,7 +104,7 @@ class _FeatureList(object):
                 yield f
 
 
-class Component(object):
+class Component(Seq):
     """
     If the underlying library supports it, mutated `Component` objects can be stored as a set of the features
     that have been added or removed from the parent component. It is recommended that the library implements a
@@ -111,14 +113,23 @@ class Component(object):
     `Component` objects, once created, SHOULDN'T be edited. However they MAY be edited until they are referred
     to by another component -- either by direct mutation or through a `_Feature`. A strategy for deleting components
     without destroying descendant objects may be necessary.
+
+    .. attribute:: display_id
+
+        A unique identifier for this component; preferably either :class:`str` or :class:`UniqueIdentifier`.
+
+    .. seealso:: :class:`Bio.Seq`
+
     """
     on_feature_added = Signal()
     on_feature_removed = Signal()
     on_internal_mutation = Signal()
 
-    def __init__(self, sequence='', parent=None, storage=None, meta=None, id=None, feature_class=None):
-        if isinstance(sequence, six.string_types):
-            sequence = Seq(sequence)
+    def __init__(self, sequence='', parent=None, storage=None, meta=None, display_id=None, feature_class=None, alphabet=Alphabet.generic_alphabet):
+        if isinstance(sequence, Seq):
+            sequence = str(sequence)
+
+        super(Component, self).__init__(sequence, alphabet)
 
         # TODO support components without sequence.
 
@@ -126,19 +137,13 @@ class Component(object):
         self._sequence = sequence
         self._storage = storage
         self._mutations = ()
-        self._mutations_tt = TranslationTable.from_mutations(self.sequence, self._mutations)
-        self._id = id
+        self._mutations_tt = TranslationTable.from_mutations(self, self._mutations)
+        self.display_id = display_id
 
-        self.features = feature_list = _FeatureList(self,
+        self.features = feature_list = _FeatureSet(self,
                                                     feature_class=feature_class,
                                                     parent=self._parent.features if self._parent else None)
         self.meta = meta or {}
-
-
-
-    @classmethod
-    def from_file(cls, file, converter=None):
-        pass
 
     @classmethod
     def from_components(cls, components, copy_features=False):
@@ -162,7 +167,7 @@ class Component(object):
 
     @property
     def id(self):
-        return self._id
+        return self.display_id
 
     @property
     def length(self):
@@ -171,10 +176,6 @@ class Component(object):
     @property
     def parent(self):
         return self._parent
-
-    @property
-    def sequence(self):
-        return self._sequence
 
     def clone(self):
         """
@@ -220,8 +221,8 @@ class Component(object):
         :raises: OverlapException
         """
         component = self.clone() if clone else self
-        features = _FeatureList(component, parent=self.features) if clone else self.features
-        sequence = self._sequence.tomutable()
+        features = _FeatureSet(component, parent=self.features) if clone else self.features
+        sequence = self.tomutable()
 
         tt = TranslationTable(self.length) if clone else self._mutations_tt
         changed_features = set()
@@ -251,13 +252,13 @@ class Component(object):
             # TODO strict mode implementation that also fires on other overlaps.
 
             # TODO features.
-            affected_features = features.intersect(mutation.position, mutation.position + mutation.size)
+            affected_features = features.overlap(mutation.position, mutation.position + mutation.size)
 
 
             logging.debug('affected features: {}'.format(affected_features))
 
             # TODO also search previously affected features and exclude these.
-            # TODO e.g. features = _FeatureList(component, inherit=self.features)
+            # TODO e.g. features = _FeatureSet(component, inherit=self.features)
 
             logging.debug('sequence: "%s"', sequence)
             logging.debug('alignment: \n%s', tt.alignment_str())
@@ -313,7 +314,7 @@ class Component(object):
                           translated_start,
                           sequence[translated_start],
                           mutation.start,
-                          self.sequence[mutation.start],
+                          self[mutation.start],
                           mutation.size,
                           mutation.new_sequence)
 
@@ -340,7 +341,7 @@ class Component(object):
 
         logging.debug('mutated sequence: %s', str(sequence))
 
-        component._sequence = sequence.toseq()
+        component._data = str(sequence.toseq())
         component._mutations = tuple(mutations)
         component._mutations_tt = tt
         component.features = features
@@ -390,9 +391,10 @@ class Component(object):
         assert isinstance(other, Component)
         if other == self.parent:
             return self._mutations
-        if self._storage and self._storage == other._storage:
-            return self._storage.diff(self, other)
-        return diff(self, other)
+        raise NotImplementedError()
+
+    def fdiff(self, other):
+        raise NotImplementedError()
 
 
 class _Feature(FeatureBase):
@@ -416,6 +418,7 @@ class _Feature(FeatureBase):
 
     def translate(self, component, tt):
         # size = tt[self.end] - tt[self.start] + 1
+        logging.debug('%s: %s' % (self.__dict__, list(tt)))
         return self.move(tt[self.position], self.size, component=component)
 
     def move(self, position, size=None, component=None):
@@ -435,6 +438,17 @@ class _Feature(FeatureBase):
 
     def is_anonymous(self):
         return self._type is None
+
+    def __eq__(self, other):
+        if not isinstance(other, _Feature):
+            return False
+        return self.start == other.start and \
+               self.size == other.size and \
+               self.type == other.type and \
+               self.strand == other.strand
+
+    def __hash__(self):
+        return hash((self.start, self.end, self.type))
 
     def __repr__(self):
         return '<Feature:{} from {} to {}>'.format(self.type or self.name, self.start, self.end)

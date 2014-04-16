@@ -1,5 +1,6 @@
 import Bio
 import six
+from colib import Component
 
 
 class Mutation(object):
@@ -35,10 +36,23 @@ class Mutation(object):
         Start index of the mutation, zero-based.
 
     """
-    def __init__(self, position, size, new_sequence=''):
-        assert isinstance(new_sequence, (six.string_types, Bio.Seq))
+    def __init__(self, position, size=None, new_sequence='', end=None):
+        assert isinstance(new_sequence, (six.string_types, Bio.Seq, Component))
+        assert size is None or size >= 0
+        assert end is None or end >= position
+
         self.position = int(position)
-        self.size = int(size)
+
+        if end is not None:
+            self.size = int(position) - int(end) + 1
+        elif size is None:
+            self.size = 0
+        else:
+            self.size = int(size)
+
+        if isinstance(new_sequence, Component):
+            new_sequence = new_sequence.sequence
+
         self.new_sequence = new_sequence
 
     @property

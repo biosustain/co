@@ -1,7 +1,9 @@
+from colib.interval import IntervalMixin
+
 FORWARD_STRAND, REVERSE_STRAND = 1, -1
 
 
-class FeatureBase(object):
+class FeatureBase(IntervalMixin):
 
     def __init__(self, component, position, size, strand=None):
         self._component = component
@@ -39,16 +41,10 @@ class FeatureBase(object):
 
     @property
     def sequence(self):
-        sequence = self._component.sequence[self.start:self.end + 1]
+        sequence = self._component[self.start:self.end + 1]
         if self.strand == REVERSE_STRAND:
             return sequence.reverse_complement()
         return sequence
-
-    def __lt__(self, other):
-        return self._position < other._position
-
-    def __eq__(self, other):
-        return self._position == other._position
 
     def __hash__(self):
         return self._position

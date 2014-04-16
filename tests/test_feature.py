@@ -1,3 +1,4 @@
+# coding: utf-8
 from itertools import permutations
 import unittest
 from colib import Component
@@ -42,7 +43,9 @@ class FeatureTestCase(unittest.TestCase):
         # 12|3xy|-5   12|3xy|-5
 
         for order in permutations([DEL(3), INS(3, 'xy')]):
+            print('order',order)
             features = component.mutate(order, strict=False).features
+            print(features)
             try:
                 print(str(list(features)[0].sequence), '<<<<<<<<<<<<<<<<<')
                 self.assertEqual('3xy', str(list(features)[0].sequence))

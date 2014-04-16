@@ -28,6 +28,8 @@ Current plans for future releases include a *version tracking* system of some so
 be updated with a more accurate sequence while maintaining the relationship to the component's child component. Most
 likely, versions will be hashes of the mutations that make up a component.
 
+Also planned is a *storage* interface that can be implemented to automatically save, load and look up parts in different
+backends.
 
 Indices and tables
 ==================

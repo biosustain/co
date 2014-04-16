@@ -6,6 +6,13 @@ from Bio.SeqRecord import SeqRecord
 from colib.components import Component, _Feature
 from colib.identifiers import UniqueIdentifier
 
+__all__ = (
+    'Converter',
+    'GenbankConverter',
+    'FASTAConverter',
+    'SBOLConverter',
+    'JSONConverter'
+)
 
 GENBANK_META_ANNOTATIONS = ('accessions', 'comment', 'gi', 'organism', 'sequence_version', 'source', 'taxonomy')
 
@@ -95,7 +102,18 @@ GENBANK_SINGLE_QUALIFIERS = (
     'rpt_family',
 )
 
-class GenbankConverter(object):
+class Converter(object):
+
+    @classmethod
+    def from_file(cls, file):
+        raise NotImplementedError()
+
+    @classmethod
+    def to_file(cls, component, file, record_id):
+        raise NotImplementedError()
+
+
+class GenbankConverter(Converter):
 
     @classmethod
     def from_file(cls, file):
@@ -142,10 +160,10 @@ class GenbankConverter(object):
 
     @staticmethod
     def to_genbank_record(component, record_id):
-        if not component.sequence:
+        if len(component) == 0:
             raise RuntimeError('Can only export records with an explicit sequence.')
 
-        record = SeqRecord(component.sequence, id=record_id)
+        record = SeqRecord(component, id=record_id)
         record.annotations = component.meta
 
         for feature in component.features:
@@ -156,26 +174,12 @@ class GenbankConverter(object):
         return record
 
 
-class FASTAConverter(object):
-
-    @classmethod
-    def from_file(cls, file):
-        raise NotImplementedError()
-
-    @classmethod
-    def to_file(cls, component, file, record_id=None):
-        raise NotImplementedError()
+class FASTAConverter(Converter):
+    pass
 
 
-class SBOLConverter(object):
-
-    @classmethod
-    def from_file(cls, file):
-        raise NotImplementedError()
-
-    @classmethod
-    def to_file(cls, component, file, record_id=None):
-        raise NotImplementedError()
+class SBOLConverter(Converter):
+    pass
 
 
 class _ComponentEncoder(json.JSONEncoder):
@@ -202,7 +206,8 @@ class _ComponentEncoder(json.JSONEncoder):
         elif isinstance(obj, UniqueIdentifier):
             return [obj.type, obj.identifier]
 
-class JSONConverter(object):
+
+class JSONConverter(Converter):
 
     @classmethod
     def to_file(cls, component, file, record_id=None):

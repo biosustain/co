@@ -22,20 +22,20 @@ class ComponentTestCase(unittest.TestCase):
         self.assertEqual('ACdefGgHIJoopsTUxxVWXYZ', six.text_type(mutated.sequence))
 
     def test_mutate_replace(self):
-        self.assertEqual('01ttf2345', six.text_type(Component('012345').mutate([Mutation(1, 1, '1ttf')]).sequence))
-        self.assertEqual('0ott45', six.text_type(Component('012345').mutate([Mutation(1, 3, 'ott')]).sequence))
-        self.assertEqual('z12345', six.text_type(Component('012345').mutate([SNP(0, 'z')]).sequence))
+        self.assertEqual('01ttf2345', str(Component('012345').mutate([Mutation(1, 1, '1ttf')])))
+        self.assertEqual('0ott45', str(Component('012345').mutate([Mutation(1, 3, 'ott')])))
+        self.assertEqual('z12345', str(Component('012345').mutate([SNP(0, 'z')])))
 
     def test_mutate_delete(self):
-        self.assertEqual('01234', six.text_type(Component('012345').mutate([DEL(5)]).sequence))
-        self.assertEqual('01235', six.text_type(Component('012345').mutate([DEL(4)]).sequence))
-        self.assertEqual('0123', six.text_type(Component('012345').mutate([DEL(4, 2)]).sequence))
-        self.assertEqual('2345', six.text_type(Component('012345').mutate([DEL(0, 2)]).sequence))
+        self.assertEqual('01234', str(Component('012345').mutate([DEL(5)])))
+        self.assertEqual('01235', str(Component('012345').mutate([DEL(4)])))
+        self.assertEqual('0123', str(Component('012345').mutate([DEL(4, 2)])))
+        self.assertEqual('2345', str(Component('012345').mutate([DEL(0, 2)])))
 
     def test_mutate_insert(self):
-        self.assertEqual('99012345', six.text_type(Component('012345').mutate([INS(0, '99')]).sequence))
-        self.assertEqual('09912345', six.text_type(Component('012345').mutate([INS(1, '99')]).sequence))
-        self.assertEqual('9912345', six.text_type(Component('012345').mutate([INS(0, '99', replace=True)]).sequence))
+        self.assertEqual('99012345', str(Component('012345').mutate([INS(0, '99')])))
+        self.assertEqual('09912345', str(Component('012345').mutate([INS(1, '99')])))
+        self.assertEqual('9912345', str(Component('012345').mutate([INS(0, '99', replace=True)])))
         # FIXME self.assertEqual('01234599', six.text_type(Component('012345').mutate([INS(6, '99')]).sequence))
 
     @unittest.SkipTest

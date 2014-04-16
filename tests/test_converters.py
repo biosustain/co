@@ -15,7 +15,7 @@ class GenbankConverterTestCase(unittest.TestCase):
 
         self.assertEqual(4196, len(component))
         self.assertEqual(19, len(component.features))
-        self.assertEqual('TTCTCATGTT', str(component.sequence[0:10]))
+        self.assertEqual('TTCTCATGTT', str(component[0:10]))
 
         self.assertEqual(
             Counter(
@@ -40,7 +40,7 @@ class GenbankConverterTestCase(unittest.TestCase):
                          'TCCTGTTTTTGCT', str(feature_15.sequence))
 
     def test_export(self):
-        component = Component(Seq('TATAGAGACACA', DNAAlphabet()), meta={'accession': 'MB1'})
+        component = Component('TATAGAGACACA', alphabet=DNAAlphabet(), meta={'accession': 'MB1'})
         component.features.add(3, 4, type='minus_10_signal')
         component.features.add(7, 2, name='GA', type='CDS', qualifiers={'locus_id': 'b0001'})
 
