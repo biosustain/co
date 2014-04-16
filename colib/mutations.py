@@ -81,17 +81,6 @@ class Mutation(object):
     def is_insertion(self):
         return not self.is_substitution() and self.new_size > 0
 
-    def context(self):
-        """
-        The context of a mutation returns a description of possible feature annotations or parts that were used to
-        create the mutation. The context is used to create human-readable feedback.
-        """
-        return dict(
-            position=repr(self.position),
-            size=repr(self.size),
-            new_sequence=repr(self.new_sequence)  # FIXME sequence representation only if it is a Sequence object.
-        )
-
     def __repr__(self):
         if self.is_insertion() and self.size == 0:
             return '<Mutation: at {} insert "{}">'.format(self.position, self.new_sequence)
