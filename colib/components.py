@@ -1,107 +1,21 @@
 # coding: utf-8
-from collections import namedtuple
-import functools
 import heapq
 import logging
-import blist
-from operator import attrgetter
+
 from Bio import Alphabet
 from Bio.Seq import Seq
 from blinker import Signal
-import six
-from colib.annotations import FeatureBase, FORWARD_STRAND
+
+from colib.difference import Diff
+from colib.features import Feature, ComponentFeatureSet
 from colib.interval import IntervalTree
-from colib.sequence import OverlapError, TranslationTable
+from colib.translation import OverlapError, MutableTranslationTable
 
 
 def diff(original, other):
     if original.precursor == other:
         return original._mutations
     raise NotImplementedError()  # TODO if original.inherits(other)
-
-class _FeatureSet(object):
-
-    def __init__(self, component, parent=None, feature_class=None):
-        self._feature_class = feature_class or _Feature
-        self._features = IntervalTree()
-        self._removed_features = set()
-        self._component = component
-        self._parent_feature_list = parent
-
-    def overlap(self, start, end, include_inherited=True):
-        if start > end:
-            return set()
-
-        # TODO this overlap lookup requires optimization.
-        #overlap = set(self._features_from_end.filter_ge(start)) & set(self._features.filter_le(end))
-        intersect = set(self._features.overlap(start, end))
-
-        if self._parent_feature_list and include_inherited:
-            logging.debug('overlap({}, {}): inherited between {} and {}'.format(start, end, self._tt.ge(start), self._tt.le(end)))
-            intersect |= self._parent_feature_list.overlap(self._tt.ge(start), self._tt.le(end)) - self._removed_features
-        return intersect
-
-    def find(self, *args, **kwargs):
-        pass
-
-    def add(self, position=None, size=None, **kwargs):
-        if isinstance(position, FeatureBase):
-            feature = position
-            # feature = self._feature_class(self._component,
-            #                    obj.position,
-            #                    obj.size,
-            #                    **obj.attributes)
-        else:
-            feature = self._feature_class(self._component, position, size, **kwargs)
-        self._insert(feature)
-        return feature
-
-    def _insert(self, feature):
-        self._features.add(feature)
-        #self._features_from_end.insert(feature)
-
-    def remove(self, feature):
-        """
-        """
-        if feature in self._features:
-            self._features.remove(feature)
-            # self._features_from_end.remove(feature)
-        elif self._parent_feature_list:
-            self._removed_features.add(feature)
-        else:
-            raise KeyError(feature)
-
-    # def _translate_feature(self, feature):
-    #     component = self._component
-    #     return _Feature(component, component._mutations_tt[feature.position], *feature[2:])
-
-    @property
-    def _tt(self):
-        return self._component._mutations_tt
-
-    @property
-    def added(self):
-        return self._features
-
-    @property
-    def removed(self):
-        return self._removed_features
-
-    def __len__(self):
-        if self._parent_feature_list:
-            return len(self._parent_feature_list) - len(self._removed_features) + len(self._features)
-        return len(self._features)
-
-    def __iter__(self):
-        if self._parent_feature_list:  # NOTE: this is where caching should kick in on any inherited implementation.
-            keep_features = (f for f in self._parent_feature_list if f not in self._removed_features)
-            translated_features = (f.translate(self._component, self._tt) for f in keep_features)
-
-            for f in heapq.merge(self._features, translated_features):
-                yield f
-        else:
-            for f in self._features:
-                yield f
 
 
 class Component(Seq):
@@ -137,13 +51,16 @@ class Component(Seq):
         self._sequence = sequence
         self._storage = storage
         self._mutations = ()
-        self._mutations_tt = TranslationTable.from_mutations(self, self._mutations)
+        self._mutations_tt = MutableTranslationTable.from_mutations(self, self._mutations)
         self.display_id = display_id
 
-        self.features = feature_list = _FeatureSet(self,
-                                                    feature_class=feature_class,
-                                                    parent=self._parent.features if self._parent else None)
+        self.features = ComponentFeatureSet(self, feature_class=feature_class)
         self.meta = meta or {}
+
+    def tt(self, ancestor=None):
+        if ancestor in (None, self._parent):
+            return self._mutations_tt
+        raise KeyError("Translation table from {} to {} cannot be accessed.".format(self, ancestor))
 
     @classmethod
     def from_components(cls, components, copy_features=False):
@@ -203,7 +120,7 @@ class Component(Seq):
         Although mutations are executed in order, the mutate function will attempt to resize features based on where
         their start or end based have been in the reference sequence if a based is lost and then restored in multiple
         mutations. For each deleted base, the algorithm tracks the next base to the left and to the right that was
-        not deleted. In strict mode, since mutations are not allowed to overlap, this only affects directly adjacent
+        not deleted. In strict mode, since mutations are not allowed to find_overlapping, this only affects directly adjacent
         mutations.
 
         ::
@@ -218,20 +135,20 @@ class Component(Seq):
         :param clone: `True` by default; if `False`, the component will *NOT* be cloned and the changes will be applied
             to the original version instead.
         :returns: A mutated copy of the component (or a reference to the original component if `clone=False`)
-        :raises: OverlapException
+        :raises OverlapException: if mutations find_overlapping
         """
         component = self.clone() if clone else self
-        features = _FeatureSet(component, parent=self.features) if clone else self.features
+        features = component.features
         sequence = self.tomutable()
 
-        tt = TranslationTable(self.length) if clone else self._mutations_tt
+        tt = MutableTranslationTable(self.length) if clone else self._mutations_tt
         changed_features = set()
 
         logging.debug('original features: {}'.format(list(self.features)))
         logging.debug('new features: {}'.format(list(features)))
 
         for mutation in mutations:
-            # translate mutations, apply.
+            # translate_to mutations, apply.
             # catch strict errors
             # flag features as edited/changed (copies are created as this happens), deleted.
 
@@ -255,6 +172,7 @@ class Component(Seq):
             affected_features = features.overlap(mutation.position, mutation.position + mutation.size)
 
 
+            logging.debug('{} in {} to {} '.format(set(features), mutation.position, mutation.position + mutation.size))
             logging.debug('affected features: {}'.format(affected_features))
 
             # TODO also search previously affected features and exclude these.
@@ -273,7 +191,6 @@ class Component(Seq):
                 # logging.debug(list(range(len(self.sequence))))
                 # logging.debug(list(tt))
                 logging.info('{} with sequence "{}" affected by {}.'.format(feature, feature.sequence, mutation))
-
 
                 if feature.end < mutation.start or feature.start > mutation.end:
                     continue
@@ -350,8 +267,8 @@ class Component(Seq):
 
         for feature in changed_features:
             logging.debug('changed: %s', feature)
-            translated_feature = feature.translate(component, tt)
-            features._insert(translated_feature)
+            translated_feature = feature.translate_to(component, tt)
+            features.add(translated_feature)
 
             logging.debug('translating %s: %s(%s) "%s" -> %s(%s) "%s"',
                           feature,
@@ -394,61 +311,7 @@ class Component(Seq):
         raise NotImplementedError()
 
     def fdiff(self, other):
-        raise NotImplementedError()
-
-
-class _Feature(FeatureBase):
-
-    def __init__(self, component, position, size, type=None, name=None, qualifiers=None, strand=FORWARD_STRAND, source=None, source_link_broken=False):
-        super(_Feature, self).__init__(component, position, size, strand)
-        self._type = type
-        self._name = name
-        self._qualifiers = qualifiers or {}
-        self._source = source
-        self._source_link_broken = source_link_broken
-
-    component = property(fget=attrgetter('_component'))
-    position = property(fget=attrgetter('_position'))
-    size = property(fget=attrgetter('_size'))
-    type = property(fget=attrgetter('_type'))
-    name = property(fget=attrgetter('_name'))
-    # strand = property(fget=attrgetter('_strand'))
-    source = property(fget=attrgetter('_source'))
-    source_link_broken = property(fget=attrgetter('_source_link_broken'))
-
-    def translate(self, component, tt):
-        # size = tt[self.end] - tt[self.start] + 1
-        logging.debug('%s: %s' % (self.__dict__, list(tt)))
-        return self.move(tt[self.position], self.size, component=component)
-
-    def move(self, position, size=None, component=None):
-        return _Feature((component or self._component),
-                        position,
-                        size or self.size,
-                        self._type,
-                        self._name,
-                        self._qualifiers,
-                        self.strand,
-                        self._source,
-                        self._source_link_broken)
-
-    @property
-    def qualifiers(self):
-        return self._qualifiers.copy()
-
-    def is_anonymous(self):
-        return self._type is None
-
-    def __eq__(self, other):
-        if not isinstance(other, _Feature):
-            return False
-        return self.start == other.start and \
-               self.size == other.size and \
-               self.type == other.type and \
-               self.strand == other.strand
-
-    def __hash__(self):
-        return hash((self.start, self.end, self.type))
-
-    def __repr__(self):
-        return '<Feature:{} from {} to {}>'.format(self.type or self.name, self.start, self.end)
+        if other == self.parent:
+            return Diff(added=self.features.added, removed=self.features.removed)
+        if other.parent == self:
+            return Diff(added=other.features.added, removed=other.features.removed)

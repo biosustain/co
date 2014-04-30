@@ -38,7 +38,7 @@ Commands
         "source": ["/component/12", False]
     }]
 
-    GET /component/{id}/features/overlap ? start end include_inherited=True
+    GET /component/{id}/features/find_overlapping ? start end include_inherited=True
     Returns all features that fall within a given range.
 
     GET /component/{id}/features/find ? type=Any name=Any qualifiers={ ... } xref=Any

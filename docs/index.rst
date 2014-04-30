@@ -31,6 +31,8 @@ likely, versions will be hashes of the mutations that make up a component.
 Also planned is a *storage* interface that can be implemented to automatically save, load and look up parts in different
 backends.
 
+More tolerance for overlapping mutations is also considered -- an improved `non-strict` mode so to say.
+
 Indices and tables
 ==================
 

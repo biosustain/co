@@ -3,7 +3,11 @@ COmponent LIbrary
 =================
 """
 from colib.components import Component
-from colib.annotations import FeatureBase
-from colib.sequence import TranslationTable # IntervalTree
+from colib.translation import TranslationTable, MutableTranslationTable
 
-__all__ = ('Component', 'FeatureBase', 'TranslationTable')
+__all__ = (
+    'Component',
+    'Feature',
+    'TranslationTable',
+    'MutableTranslationTable'
+)

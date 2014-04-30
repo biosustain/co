@@ -2,8 +2,21 @@
 from colib.difference import Diff
 
 
+class FeatureView(object):
 
+    def __init__(self, components):
+        self.components = components
 
+    def find(self, **kwargs):
+        """
+        Searches all components for features matching the constraints.
+        """
+        raise NotImplementedError()
+
+    def __iter__(self):
+        for component in self.components:
+            for feature in component.features:
+                yield feature
 
 class HaploidOrganism(object):
     """
@@ -44,7 +57,7 @@ class HaploidOrganism(object):
         """
         A read-only view of all the features present in all components of the organism.
         """
-        raise NotImplementedError()
+        return FeatureView(self.components.values())
 
     def diff(self, other):
         """

@@ -1,3 +1,6 @@
+from abc import ABCMeta, abstractproperty
+import six
+
 __all__ = ('IntervalTree', 'IntervalMixin')
 
 
@@ -17,7 +20,7 @@ def node_search(node, data):
         return
 
     if node.right is not None:
-        for d in node_search(node.left, data):
+        for d in node_search(node.right, data):
             yield d
 
 
@@ -58,7 +61,13 @@ class IntervalTree(object):
 
     def add(self, interval):
         self.root = node_insert(self.root, interval)
-        self.size += 1 # FIXME since original node might be replaced, size will not necessarily change.
+        self.size += 1  # FIXME since original node might be replaced, size will not necessarily change.
+
+    def copy(self):
+        it = IntervalTree()
+        for node in self:
+            it.add(it.data)
+        return it
 
     def remove(self, interval):
         try:
@@ -68,7 +77,8 @@ class IntervalTree(object):
         except LookupError:
             pass
 
-    def overlap(self, start, end):
+    def find_overlapping(self, start, end):
+        assert end >= start
         for i in node_search(self.root, Interval(start, end)):
             yield i
 
@@ -88,7 +98,28 @@ class IntervalTree(object):
         return self.size
 
 
-class IntervalMixin(object):
+class IntervalBase(six.with_metaclass(ABCMeta, object)):
+    """
+
+    An interval ``Interval(start, end)`` describes a range `[start, end]` where both ``start`` and ``end`` are included.
+
+    .. attribute:: start
+
+    .. attribute:: end
+    """
+    @abstractproperty
+    def start(self):
+        raise NotImplementedError()
+
+    @abstractproperty
+    def end(self):
+        raise NotImplementedError()
+
+    def contains(self, other):
+        return self.start <= other.start and self.end >= other.end
+
+    def overlaps(self, other):
+        return self.start <= other.end and self.end >= other.start
 
     def __contains__(self, position):
         return self.start <= position <= self.end
@@ -114,26 +145,29 @@ class IntervalMixin(object):
     def __eq__(self, other):
         return self.start == other.start and self.end == other.end
 
-    def contains(self, other):
-        return self.start <= other.start and self.end >= other.end
 
-    def overlaps(self, other):
-        return self.start <= other.end and self.end >= other.start
-
-
-class Interval(IntervalMixin):
+class Interval(IntervalBase):
     def __init__(self, start, end):
-        self.start = start
-        self.end = end
+        self._start = start
+        self._end = end
+
+    @property
+    def start(self):
+        return self._start
+
+    @property
+    def end(self):
+        return self._end
+
+    def __repr__(self):
+        return 'Interval({}, {})'.format(self.start, self.end)
 
 
 class IntervalNode(object):
-
     def __init__(self, data, left=None, right=None):
         self.left = left
         self.right = right
         self.data = data
-        pass
 
     def find_min(self):
         current_node = self

@@ -15,6 +15,201 @@ class OverlapError(Exception):
 
 
 class TranslationTable(object):
+
+    def __init__(self,
+                 source_size,
+                 target_size,
+                 source_start,
+                 source_end,
+                 target_start,
+                 target_end,
+                 chain):
+        """
+        test
+
+        :param size: length of the source sequence
+        """
+        self.source_size = source_size
+        self.target_size = target_size
+        self.source_start, self.source_end = source_start, source_end
+        self.target_start, self.target_end = target_start, target_end
+        self.chain = chain
+
+    def invert(self):
+        """
+        Creates a copy of the table where *source* and *target* are inverted.
+
+        :returns: a new :class:`TranslationTable` object.
+        """
+        cls = self.__class__
+        tti = cls.__new__(cls)
+        tti.source_size = self.target_size
+        tti.target_size = self.source_size
+        tti.source_start, tti.source_end = self.target_start, self.target_end
+        tti.target_start, tti.target_end = self.source_start, self.source_end
+        tti.chain = [(ungapped_size, dt, ds) for ungapped_size, ds, dt in self.chain]
+        return tti
+
+    def le(self, position):
+        """
+        :func:`le()` attempts to return the coordinate in the target sequence that corresponds to the `position`
+        parameter in the source sequence. If `position` falls into a gap in the target sequence, it will instead return
+        the last coordinate in front of that gap.
+
+        :raises IndexError: if `position` does not exist in the source or if it maps to a coordinate before
+            the start of the target sequence alignment.
+        :returns: the first position, equal or lower than `position` that exists in the query sequence.
+        """
+        while True:  # TODO a more efficient le() implementation
+            target_position = self[position]
+            if target_position is not None:
+                return target_position
+            position -= 1
+
+    def ge(self, position):
+        """
+        .. seealso::
+
+            The :func:`.le()` function.
+
+        :raises IndexError: if `position` does not exist in the source or if it maps to a coordinate after
+            the end of the target sequence alignment.
+        :returns: the first position, equal or greater than `position` that exists in the query sequence.
+        """
+        while True: # TODO a more efficient ge() implementation
+            query_position = self[position]
+            if query_position is not None:
+                return query_position
+            position += 1
+
+    @property
+    def total_ungapped_size(self):
+        """
+        The total length of the alignment between source and target.
+        """
+        return sum(ungapped_size for ungapped_size, ds, dt in self.chain)
+
+    def alignment(self):
+        """
+        Returns an iterator yielding tuples in the form ``(source, target)``.
+
+        :returns: an iterator over all coordinates in both the source and target sequence.
+        """
+        def source():
+            offset = self.source_start
+            for ungapped_size, ds, dt in self.chain:
+                for i in range(ungapped_size):
+                    yield offset + i, ' '
+                for i in range(dt):
+                    yield offset + ungapped_size + i, '*'
+                for i in range(ds):
+                    yield None
+                offset += ungapped_size + dt
+
+        def target():
+            offset = self.target_start
+            for ungapped_size, ds, dt in self.chain:
+                for i in range(ungapped_size):
+                    yield offset + i, ' '
+                for i in range(ds):
+                    yield offset + ungapped_size + i, '*'
+                for i in range(dt):
+                    yield None
+                offset += ungapped_size + ds
+
+        return zip(
+            chain(repeat(None, self.source_start), source()),
+            chain(repeat(None, self.target_start), target()))
+
+    def alignment_str(self):
+        """
+        Returns a string representation of the alignment between `source` and `target` coordinates.
+
+        .. warning::
+            This function should only be used for debugging purposes.
+
+        """
+        s_str, t_str = '', ''
+        logging.debug(self.__dict__)
+
+        for s, t in self.alignment():
+            s_str += ' {:3d}{}'.format(*s) if s is not None else '   - '
+            t_str += ' {:3d}{}'.format(*t) if t is not None else '   - '
+
+        return s_str + '\n' + t_str
+
+    def __iter__(self):
+        for _ in range(self.source_start):
+            yield None
+
+        offset = self.source_start
+        target_offset = self.target_start
+        for ungapped_size, ds, dt in self.chain:
+            for i in range(ungapped_size):
+                yield target_offset + i
+            for i in range(dt):
+                yield None
+            target_offset += ungapped_size + ds
+            offset += ungapped_size + dt
+
+        for _ in range(offset, self.source_size):
+            yield None
+
+    def __getitem__(self, position):
+        """
+        Maps from a source coordinate to a target coordinate.
+
+        :returns: The new coordinate as an `int`, if it exists; `None` otherwise.
+        :raises IndexError: If the coordinate does not exist in the original system
+        """
+        if not 0 <= position < self.source_size:
+            raise IndexError()
+
+        if position < self.source_start:  # beginning of query was deleted.
+            return None
+
+        if position >= self.source_end:  # end of query was deleted.
+            return None
+
+        offset = self.source_start
+        target_offset = self.target_start
+        for ungapped_size, ds, dt in self.chain:
+            gap_start = offset + ungapped_size
+            source_gap_end = gap_start + ds
+            target_gap_end = gap_start + dt # NOTE might be ds
+
+            # print 'chain:', (ungapped_size, ds, dt)
+            # print (ungapped_size, ds, dt, target_offset, position, offset)
+            # print position < offset + ungapped_size, position < offset + ungapped_size + dt
+            if position < gap_start:  # target position is in this ungapped block
+                # FIXME the <= is wrong, but necessary for some tests to work. The worst kind of wrong.
+                logging.debug('{}: {} {} {} {}'.format(
+                    position,
+                    ungapped_size,
+                    ds,
+                    dt,
+                    target_offset + (position - offset)
+                ))
+                return target_offset + (position - offset)
+            elif position < target_gap_end:
+                return None  # position falls into a gap in the query sequence (i.e. a deletion)
+            # elif position < source_gap_end:
+            else:
+                target_offset += ungapped_size + ds
+                offset += ungapped_size + dt
+            # print
+
+        logging.debug('offset, target_offset, position: ' + ', '.join(map(str, [offset, target_offset, position])))
+        return target_offset + (position - offset)
+
+    def __len__(self):
+        """
+        :returns: the length of the sequence in the source coordinate system.
+        """
+        return self.source_size
+
+
+class MutableTranslationTable(TranslationTable):
     """
     :param size: the length of the source sequence
 
@@ -38,28 +233,15 @@ class TranslationTable(object):
 
     def __init__(self, size):
         """
-        test
-
         :param size: length of the source sequence
         """
-        self.source_size = size
-        self.target_size = size
-        self.source_start, self.source_end = 0, size
-        self.target_start, self.target_end = 0, size
-        self.chain = [(size, 0, 0)]  # (ungapped_size, ds, dt)
-
-    def invert(self):
-        """
-        Creates a copy of the :class:`TranslationTable` where *source* and *target* are inverted.
-
-        :returns: a new :class:`TranslationTable` object.
-        """
-        tti = TranslationTable(self.target_size)
-        tti.target_size = self.source_size
-        tti.source_start, tti.source_end = self.target_start, self.target_end
-        tti.target_start, tti.target_end = self.source_start, self.source_end
-        tti.chain = [(ungapped_size, dt, ds) for ungapped_size, ds, dt in self.chain]
-        return tti
+        super(MutableTranslationTable, self).__init__(source_size=size,
+                                                      target_size=size,
+                                                      source_start=0,
+                                                      source_end=size,
+                                                      target_start=0,
+                                                      target_end=size,
+                                                      chain=[(size, 0, 0)])
 
     @classmethod
     def from_mutations(cls, sequence, mutations, strict=True):
@@ -68,7 +250,7 @@ class TranslationTable(object):
         :param mutations: iterable of :class:`Mutation` objects
         :param strict: whether to use strict mode
         """
-        tt = TranslationTable(len(sequence))
+        tt = MutableTranslationTable(len(sequence))
 
         for mutation in mutations:
             insert_size = len(mutation.new_sequence)
@@ -235,7 +417,6 @@ class TranslationTable(object):
           the size of the source gap is increased unless `strict` is `True`, in which case an error is raised.
         - If the insertion happens inside a gap in the target sequence, an error is raised.
 
-
         """
         self._insert_gap(position, size, 0, strict)
 
@@ -244,147 +425,3 @@ class TranslationTable(object):
 
     def substitute(self, position, size, strict=True):
         self._insert_gap(position, size, size, strict)
-
-    def le(self, position):
-        """
-        :func:`le()` attempts to return the coordinate in the target sequence that corresponds to the `position`
-        parameter in the source sequence. If `position` falls into a gap in the target sequence, it will instead return
-        the last coordinate in front of that gap.
-
-        :raises IndexError: if `position` does not exist in the source or if it maps to a coordinate before
-            the start of the target sequence alignment.
-        :returns: the first position, equal or lower than `position` that exists in the query sequence.
-        """
-        while True:  # TODO a more efficient le() implementation
-            target_position = self[position]
-            if target_position is not None:
-                return target_position
-            position -= 1
-
-    def ge(self, position):
-        """
-
-        .. seealso::
-
-            The :func:`.le()` function.
-
-
-        :raises IndexError: if `position` does not exist in the source or if it maps to a coordinate after
-            the end of the target sequence alignment.
-        :returns: the first position, equal or greater than `position` that exists in the query sequence.
-        """
-        while True:
-            query_position = self[position]
-            if query_position is not None:
-                return query_position
-            position += 1
-
-    @property
-    def total_ungapped_size(self):
-        """
-        The total length of the alignment between source and target.
-        """
-        return sum(ungapped_size for ungapped_size, ds, dt in self.chain)
-
-    def alignment(self):
-        """
-        Returns an iterator yielding tuples in the form ``(source, target)``.
-
-        :returns: an iterator over all coordinates in both the source and target sequence.
-        """
-        def source():
-            offset = self.source_start
-            for ungapped_size, ds, dt in self.chain:
-                for i in range(ungapped_size):
-                    yield offset + i, ' '
-                for i in range(dt):
-                    yield offset + ungapped_size + i, '*'
-                for i in range(ds):
-                    yield None
-                offset += ungapped_size + dt
-
-        def target():
-            offset = self.target_start
-            for ungapped_size, ds, dt in self.chain:
-                for i in range(ungapped_size):
-                    yield offset + i, ' '
-                for i in range(ds):
-                    yield offset + ungapped_size + i, '*'
-                for i in range(dt):
-                    yield None
-                offset += ungapped_size + ds
-
-        return zip(
-            chain(repeat(None, self.source_start), source()),
-            chain(repeat(None, self.target_start), target())
-        )
-
-    def alignment_str(self):
-        """
-        Returns a string representation of the alignment between `source` and `target` coordinates.
-
-        .. warning::
-            This function should only be used for debugging purposes.
-
-        """
-        s_str, t_str = '', ''
-        logging.debug(self.__dict__)
-
-        for s, t in self.alignment():
-            s_str += ' {:3d}{}'.format(*s) if s is not None else '   - '
-            t_str += ' {:3d}{}'.format(*t) if t is not None else '   - '
-
-        return s_str + '\n' + t_str
-
-    def __getitem__(self, position):
-        """
-        Maps from a source coordinate to a target coordinate.
-
-        :returns: The new coordinate as an `int`, if it exists; `None` otherwise.
-        :raises IndexError: If the coordinate does not exist in the original system
-        """
-        if not 0 <= position < self.source_size:
-            raise IndexError()
-
-        if position < self.source_start: # beginning of query was deleted.
-            return None
-
-        if position >= self.source_end:  # end of query was deleted.
-            return None
-
-        offset = self.source_start
-        target_offset =  self.target_start
-        for ungapped_size, ds, dt in self.chain:
-            gap_start = offset + ungapped_size
-            source_gap_end = gap_start + ds
-            target_gap_end = gap_start + dt # NOTE might be ds
-
-            # print 'chain:', (ungapped_size, ds, dt)
-            # print (ungapped_size, ds, dt, target_offset, position, offset)
-            # print position < offset + ungapped_size, position < offset + ungapped_size + dt
-            if position < gap_start:  # target position is in this ungapped block
-                # FIXME the <= is wrong, but necessary for some tests to work. The worst kind of wrong.
-                logging.debug('{}: {} {} {} {}'.format(
-                    position,
-                    ungapped_size,
-                    ds,
-                    dt,
-                    target_offset + (position - offset)
-                ))
-                return target_offset + (position - offset)
-            elif position < target_gap_end:
-                return None  # position falls into a gap in the query sequence (i.e. a deletion)
-            # elif position < source_gap_end:
-            else:
-                target_offset += ungapped_size + ds
-                offset += ungapped_size + dt
-            # print
-
-        logging.debug('offset, target_offset, position: ' + ', '.join(map(str, [offset, target_offset, position])))
-        return target_offset + (position - offset)
-
-    def __len__(self, other):
-        """
-        :returns: the length of the sequence in the source coordinate system.
-        """
-        return self.source_size

@@ -3,7 +3,8 @@ from Bio import SeqIO
 import re
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.SeqRecord import SeqRecord
-from colib.components import Component, _Feature
+from colib.components import Component
+from colib.features import Feature
 from colib.identifiers import UniqueIdentifier
 
 __all__ = (
@@ -184,7 +185,7 @@ class SBOLConverter(Converter):
 
 class _ComponentEncoder(json.JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, _Feature):
+        if isinstance(obj, Feature):
             return {
                 'pos': obj.position,
                 'size': obj.size,

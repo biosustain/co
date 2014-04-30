@@ -1,14 +1,14 @@
 import logging
 import unittest
-from colib import TranslationTable
-from colib.sequence import OverlapError
+from colib import MutableTranslationTable
+from colib.translation import OverlapError
 
 
 class TranslationTableTestCase(unittest.TestCase):
 
     def setUp(self):
         self.sequence = 'ABCDEFGHIJ'
-        self.tt = TranslationTable(len(self.sequence))
+        self.tt = MutableTranslationTable(len(self.sequence))
 
     def test_insert_start(self):
         # e.g. new sequence: 12345ABCDEFGHIJ
@@ -159,14 +159,16 @@ class TranslationTableTestCase(unittest.TestCase):
         self.assertEqual([0, 1, 2, 3, 4, None, 7, 8, 9, 10], list(self.tt))
 
     def test_order_2(self):
+        self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], list(self.tt))
         self.tt.insert(5, 2)  # ABCDExxFGHIJ
+        self.assertEqual([0, 1, 2, 3, 4, 7, 8, 9, 10, 11], list(self.tt))
         self.assertEqual(self.tt.target_size, 12)
         self.tt.delete(5, 1)  # ABCDExx-GHIJ
         self.assertEqual(self.tt.target_size, 11)
         self.assertEqual([0, 1, 2, 3, 4, None, 7, 8, 9, 10], list(self.tt))
 
     def test_component_mutate_1(self):
-        tt = TranslationTable(26)
+        tt = MutableTranslationTable(26)
         self.assertEqual([(26, 0, 0)], tt.chain)
         self.assertEqual(26, tt.target_size)
 
@@ -196,7 +198,7 @@ class TranslationTableTestCase(unittest.TestCase):
                           None, None, None, None, None, None, 15, 16, 19, 20, 21, 22, 23], list(tt))
 
     def test_zero_gap_merge(self):
-        tt = TranslationTable(10)
+        tt = MutableTranslationTable(10)
 
         tt.delete(5, 2)
         self.assertEqual([(5, 0, 2), (3, 0, 0)], tt.chain)
@@ -211,7 +213,7 @@ class TranslationTableTestCase(unittest.TestCase):
         pass
 
     def test_le(self):
-        tt = TranslationTable(10)
+        tt = MutableTranslationTable(10)
 
         self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [tt.le(i) for i in range(10)])
 
@@ -239,7 +241,7 @@ class TranslationTableTestCase(unittest.TestCase):
         self.assertEqual([0, 1, 2, 3, 3, 3, 4, 5, 5], [tt.le(i) for i in range(1, 10)])
 
     def test_ge(self):
-        tt = TranslationTable(10)
+        tt = MutableTranslationTable(10)
 
         self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [tt.ge(i) for i in range(10)])
 
