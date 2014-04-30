@@ -1,7 +1,7 @@
 from abc import ABCMeta, abstractproperty
 import six
 
-__all__ = ('IntervalTree', 'IntervalMixin')
+__all__ = ('IntervalTree', 'BaseInterval', 'Interval')
 
 
 def node_search(node, data):
@@ -98,7 +98,7 @@ class IntervalTree(object):
         return self.size
 
 
-class IntervalBase(six.with_metaclass(ABCMeta, object)):
+class BaseInterval(six.with_metaclass(ABCMeta, object)):
     """
 
     An interval ``Interval(start, end)`` describes a range `[start, end]` where both ``start`` and ``end`` are included.
@@ -146,7 +146,7 @@ class IntervalBase(six.with_metaclass(ABCMeta, object)):
         return self.start == other.start and self.end == other.end
 
 
-class Interval(IntervalBase):
+class Interval(BaseInterval):
     def __init__(self, start, end):
         self._start = start
         self._end = end

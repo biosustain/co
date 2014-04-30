@@ -39,7 +39,15 @@ class Component(Seq):
     on_feature_removed = Signal()
     on_internal_mutation = Signal()
 
-    def __init__(self, sequence='', parent=None, storage=None, meta=None, display_id=None, feature_class=None, alphabet=Alphabet.generic_alphabet):
+    def __init__(self,
+                 sequence='',
+                 alphabet=Alphabet.generic_alphabet,
+                 parent=None,
+                 storage=None,
+                 meta=None,
+                 display_id=None,
+                 feature_class=Feature):
+
         if isinstance(sequence, Seq):
             sequence = str(sequence)
 

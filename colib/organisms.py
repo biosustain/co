@@ -1,15 +1,13 @@
-
 from colib.difference import Diff
 
 
 class FeatureView(object):
-
     def __init__(self, components):
-        self.components = components
+        self.components = set(components)
 
     def find(self, **kwargs):
         """
-        Searches all components for features matching the constraints.
+        Searches all components and yields features matching the constraints.
         """
         raise NotImplementedError()
 
@@ -18,12 +16,17 @@ class FeatureView(object):
             for feature in component.features:
                 yield feature
 
+    def __len__(self):
+        return sum(len(c.features) for c in self.components)
+
+
 class HaploidOrganism(object):
     """
 
-    .. attribute::
+    .. attribute display_id:
 
     """
+
     def __init__(self, display_id, parent=None):
         self.display_id = display_id
         self.parent = parent

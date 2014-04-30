@@ -1,6 +1,6 @@
 import heapq
 import logging
-from colib.interval import IntervalTree, IntervalBase
+from colib.interval import IntervalTree, BaseInterval
 
 
 class FeatureSet(object):
@@ -8,7 +8,7 @@ class FeatureSet(object):
     def __init__(self, feature_class=None):
         if feature_class is None:
             feature_class = Feature
-        elif not issubclass(feature_class, IntervalBase):
+        elif not issubclass(feature_class, BaseInterval):
             raise RuntimeError("FeatureSet expects a feature class of type Interval")
 
         self._features = IntervalTree()
@@ -118,7 +118,7 @@ class ComponentFeatureSet(FeatureSet):
 FORWARD_STRAND, REVERSE_STRAND = 1, -1
 
 
-class Feature(IntervalBase):
+class Feature(BaseInterval):
 
     def __init__(self, component, position, size, strand=None, type=None, **attributes):
         self._component = component
@@ -180,6 +180,10 @@ class Feature(IntervalBase):
         return self._position + self._size - 1
 
     @property
+    def attributes(self):
+        return dict(self._attributes)
+
+    @property
     def sequence(self):
         sequence = self._component[self.start:self.end + 1]
         if self.strand == REVERSE_STRAND:
@@ -195,19 +199,34 @@ class Feature(IntervalBase):
     def __eq__(self, other):
         if not isinstance(other, Feature):
             return False
-        return self.start == other.start and \
+
+        return self.position == other.position and \
                self.size == other.size and \
+               self.strand == other.strand and \
                self.type == other.type and \
-               self.strand == other.strand
+               str(self.sequence) == str(other.sequence) and \
+               self.attributes == other.attributes
 
     def __getattr__(self, item):
         return self._attributes[item]
 
     def __hash__(self):
-        return hash((self.start, self.end, self.type))
+        return hash((self.start, self.end, self.strand, self.type, tuple(self.attributes)))
 
     def __repr__(self):
-        return '<Feature:{} from {} to {}>'.format(self.type or self.name, self.start, self.end)
+        args = '{}, {}, {}'.format(repr(self.component), self.position, self.size)
+
+        if self.type:
+            args = '{}, type="{}"'.format(args, self.type)
+        if self.strand:
+            args = '{}, strand="{}"'.format(args, self.strand)
+        if self._attributes:
+            args = '{} {}'.format(args, ', '.join('{}={}'.format(k, v) for k, v in self._attributes))
+
+        return '{}({})'.format(self.__class__.__name__, args)
+
+
+
 
 
 class Annotation(object):

@@ -1,6 +1,7 @@
 import unittest
+from Bio.Alphabet import Alphabet
 import six
-from colib import Component
+from colib import Component, Feature
 from colib.converters import GenbankConverter, JSONConverter
 from colib.mutations import SNP, Mutation
 from colib.organisms import HaploidOrganism
@@ -8,13 +9,28 @@ from colib.organisms import HaploidOrganism
 
 class HaploidOrganismTestCase(unittest.TestCase):
 
-    def test_create_strain(self):
-        strain = HaploidOrganism(display_id='strain-1')
+    def test_list_features(self):
 
-        self.assertEqual(strain.__dict__, {'display_id': 'strain-1', 'contigs': [{'name': 'genome', 'component': 'genome-1'}]})
+        c1 = Component('A' * 10)
+        c1.features.add(1, 10, type='repeat')
+
+        c2 = Component('T' * 10)
+        c2.features.add(1, 10, type='repeat')
+
+        self.assertEqual([Feature(c1, 1, 10, type='repeat')], list(c1.features))
+        self.assertEqual([Feature(c2, 1, 10, type="repeat")], list(c2.features))
+
+        s = HaploidOrganism(display_id='strain')
+        s.add('a', c1)
+        s.add('b', c2)
+        s.add('c', c2)
+
+        self.assertEqual(2, len(s.features))
+        self.assertEqual([Feature(Component('AAAAAAAAAA', Alphabet()), 1, 10, type="repeat"),
+                          Feature(Component('TTTTTTTTTT', Alphabet()), 1, 10, type="repeat")], list(s.features))
 
     def test_mutate_strain(self):
-        strain = HaploidOrganism(display_id='strain-1')
+        strain = HaploidOrganism(display_id='Strain 1')
 
         feature_4 = strain.contigs[0].features[4]
         feature_5 = strain.contigs[0].features[5]
@@ -42,6 +58,7 @@ class HaploidOrganismTestCase(unittest.TestCase):
 
         self.assertEqual(len(new_strain.diff(strain)), 2)
 
+    @unittest.SkipTest
     def test_yeast(self):
         yeast = HaploidOrganism('Saccharomyces cerevisiae S288c')
 
@@ -72,7 +89,3 @@ class HaploidOrganismTestCase(unittest.TestCase):
         JSONConverter.to_file(GenbankConverter.from_file('fixtures/S288C/NC_001133.9.gb'), output)
 
         self.assertEqual('', output.getvalue())
-
-    def test_list_features(self):
-        "Expect all features from genome-1 and plasmid-1."
-        pass
