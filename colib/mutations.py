@@ -1,5 +1,5 @@
-import Bio
 import six
+from Bio.Seq import Seq
 from colib import Component
 
 
@@ -16,7 +16,7 @@ class Mutation(object):
     .. note::
         Mutation are stored as ``(position, size)`` pairs because ``(start, end)`` pairs do not allow for
         unambiguous zero-length mutations (i.e. insertions). It is possible to simulate an insertion by keeping one
-        character of the original sequence, but that would add ambiguity to the exact site of the mutated sequence.
+        character of the original sequence, but that would set ambiguity to the exact site of the mutated sequence.
 
     :param int position: start index
     :param int size: length of deletion
@@ -37,7 +37,7 @@ class Mutation(object):
 
     """
     def __init__(self, position, size=None, new_sequence='', end=None):
-        assert isinstance(new_sequence, (six.string_types, Bio.Seq, Component))
+        assert isinstance(new_sequence, six.string_types + (Seq, Component))
         assert size is None or size >= 0
         assert end is None or end >= position
 
