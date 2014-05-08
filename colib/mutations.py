@@ -21,7 +21,7 @@ class Mutation(object):
     :param int position: start index
     :param int size: length of deletion
     :param new_sequence: insertion sequence
-    :type new_sequence: str or Bio.Seq
+    :type new_sequence: str, Component or Bio.Seq
 
     .. attribute:: new_sequence
 
@@ -44,14 +44,14 @@ class Mutation(object):
         self.position = int(position)
 
         if end is not None:
-            self.size = int(position) - int(end) + 1
+            self.size = int(end) - int(position) + 1
         elif size is None:
             self.size = 0
         else:
             self.size = int(size)
 
         if isinstance(new_sequence, Component):
-            new_sequence = new_sequence.sequence
+            new_sequence = str(new_sequence)
 
         self.new_sequence = new_sequence
 
@@ -83,11 +83,11 @@ class Mutation(object):
 
     def __repr__(self):
         if self.is_insertion() and self.size == 0:
-            return '<Mutation: at {} insert "{}">'.format(self.position, self.new_sequence)
+            return 'INS({}, "{}")'.format(self.position, self.new_sequence)
         elif self.is_deletion() and self.new_size == 0:
-            return '<Mutation: delete {}({})>'.format(self.position, self.size)
+            return 'DEL({}, {})'.format(self.position, self.size)
         else:
-            return '<Mutation: change {}({}) to "{}">'.format(self.position, self.size, self.new_sequence)
+            return 'Mutation({}, {}, "{}")'.format(self.position, self.size, self.new_sequence)
 
 
 class SUB(Mutation):

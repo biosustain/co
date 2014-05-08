@@ -4,6 +4,7 @@ from sqlalchemy.dialects import postgres
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import backref, deferred, aliased
+from werkzeug.utils import cached_property
 import colib
 
 db = SQLAlchemy()
@@ -131,19 +132,32 @@ class Component(db.Model):
     def find_features(self, type=None, name=None, qualifiers=None, xref=None):
         pass
 
+    def _make_co_object(self, include_parent=False):
+
+        if include_parent and self.parent is not None:
+            parent = self.parent.get_component_obj()
+        else:
+            parent = None
+
+        co = colib.Component(sequence=self.sequence, parent=parent, feature_class=FeatureProxy)
+
+        # TODO add features attribute to colib.Component()
+        for feature in self.get_features(include_inherited=not include_parent):
+            co.features.add(feature)
+
+        return co
+
+    @cached_property
+    def co_object(self):
+        return self._make_co_object()
+
     def mutate(self, mutations, strict=True):
         """
 
         """
-        colib_component = colib.Component(sequence=self.sequence, feature_class=FeatureProxy)
+        colib_mutated = self.co_object.mutate(mutations, strict=strict)
 
-        # TODO add features attribute to colib.Component()
-        for feature in self.get_features(include_inherited=True):
-            colib_component.features.add(feature)
-
-        colib_mutated = colib_component.mutate(mutations, strict=strict)
-
-        component = Component(sequence=str(colib_mutated.sequence), parent=self)
+        component = Component(sequence=str(colib_mutated), parent=self)
 
         db.session.add(component)
 
@@ -229,15 +243,12 @@ class BoundMutation(db.Model):
         return func.length(self.new_sequence)
 
 
-class FeatureProxy(colib.FeatureBase):
-
-    def __init__(self, component, position, size, record=None, record_id=None, type=None, name=None, translated_to=None):
-        super(FeatureProxy, self).__init__(component, position, size)
+class FeatureProxy(colib.Feature):
+    def __init__(self, component, position, size, record=None, record_id=None, strand=None, type=None, name=None, translated_view=None):
+        super(FeatureProxy, self).__init__(component, position, size, strand=None, type=type, name=name)
         self.record = record
         self.record_id = record_id
-        self.translated_to = translated_to
-        self.type = type
-        self.name = name
+        self.translated_view = translated_view
 
     @classmethod
     def from_record(cls, feature, component=None):
@@ -250,7 +261,7 @@ class FeatureProxy(colib.FeatureBase):
                 feature.id,
                 type=feature.type,
                 name=feature.name,
-                translated_to=component)
+                translated_view=component)
 
         return FeatureProxy(
             feature.component,
@@ -261,24 +272,25 @@ class FeatureProxy(colib.FeatureBase):
             type=feature.type,
             name=feature.name)
 
-    def move(self, position, size, component=None):
-        return FeatureProxy(
-            component or self.component,
-            position,
-            size,
-            record=self.record,
-            record_id=self.record_id,
-            type=self.type,
-            name=self.name)
-
     @property
-    def attributes(self):
-        return dict(type=self.type, name=self.name, record=self.record, record_id=self.record_id)
+    def sequence(self):
+        sequence = self._component.co_object[self.start:self.end + 1]
+        if self.strand == colib.REVERSE_STRAND:
+            return sequence.reverse_complement()
+        return sequence
+
+    def translate_to(self, component, using_tt=None):
+        if component == self.component.co_object:
+            return self
+        if using_tt is None:
+            using_tt = component.tt(self.component.co_object)
+        print(self._position, using_tt[self.position])
+        return self.move(using_tt[self.position], size=self.size, component=component)
 
     @property
     def identifier(self):
-        if self.translated_to:
-            return '{}.{}t{}'.format(self.component.id, self.record_id, self.translated_to.id)
+        if self.translated_view:
+            return '{}.{}t{}'.format(self.component.id, self.record_id, self.translated_view.id)
         else:
             return '{}.{}'.format(self.component.id, self.record_id)
 

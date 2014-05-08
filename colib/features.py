@@ -100,7 +100,7 @@ class ComponentFeatureSet(FeatureSet):
         """
         if feature in self._features:
             self._features.remove(feature)
-        elif self.parent_feature_set:
+        elif self.parent_feature_set and feature in self.parent_feature_set:
             self.removed_features.add(feature)
         else:
             raise KeyError(feature)
@@ -110,6 +110,11 @@ class ComponentFeatureSet(FeatureSet):
         tt = self.component.tt()
 
         if self.parent_feature_set and include_inherited:
+            print()
+            print()
+            print(self, start, end, len(self.component), len(tt))
+            print(tt.ge(start))
+            print(tt.le(end))
             logging.debug('find_overlapping({}, {}): inherited between {} and {}'.format(start, end, tt.ge(start), tt.le(end)))
             intersect |= self.parent_feature_set.overlap(tt.ge(start), tt.le(end)) - self.removed_features
         return intersect
@@ -138,7 +143,7 @@ class Feature(BaseInterval):
         return self.move(using_tt[self.position], size=self.size, component=component)
 
     def move(self, position, size=None, component=None):
-        return Feature((component or self._component),
+        return self.__class__((component or self._component),
                        position,
                        size or self.size,
                        strand=self.strand,
@@ -221,12 +226,9 @@ class Feature(BaseInterval):
         if self.strand:
             args = '{}, strand="{}"'.format(args, self.strand)
         if self._attributes:
-            args = '{} {}'.format(args, ', '.join('{}={}'.format(k, v) for k, v in self._attributes))
+            args = '{} {}'.format(args, ', '.join('{}={}'.format(k, v) for k, v in self._attributes.items()))
 
         return '{}({})'.format(self.__class__.__name__, args)
-
-
-
 
 
 class Annotation(object):

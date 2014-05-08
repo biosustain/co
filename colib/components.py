@@ -68,7 +68,7 @@ class Component(Seq):
     def tt(self, ancestor=None):
         if ancestor in (None, self._parent):
             return self._mutations_tt
-        raise KeyError("Translation table from {} to {} cannot be accessed.".format(self, ancestor))
+        raise KeyError("Translation table from {} to {} cannot be accessed.".format(repr(self), repr(ancestor)))
 
     @classmethod
     def from_components(cls, components, copy_features=False):
@@ -108,9 +108,7 @@ class Component(Seq):
 
         The copy is linked to the same storage as the original, but is not saved automatically.
         """
-        return Component(self._sequence,
-                         parent=self,
-                         storage=self._storage)
+        return Component(self._sequence, parent=self)
 
     def mutate(self, mutations, strict=True, clone=True):
         """
@@ -155,6 +153,11 @@ class Component(Seq):
         logging.debug('original features: {}'.format(list(self.features)))
         logging.debug('new features: {}'.format(list(features)))
 
+        # check that all mutations are in range:
+        for mutation in mutations:
+            if mutation.end >= len(self):
+                raise IndexError('{} ends at {} but sequence length is {}'.format(mutation, mutation.end, len(self)))
+
         for mutation in mutations:
             # translate_to mutations, apply.
             # catch strict errors
@@ -177,8 +180,7 @@ class Component(Seq):
             # TODO strict mode implementation that also fires on other overlaps.
 
             # TODO features.
-            affected_features = features.overlap(mutation.position, mutation.position + mutation.size)
-
+            affected_features = features.overlap(mutation.position, mutation.end)
 
             logging.debug('{} in {} to {} '.format(set(features), mutation.position, mutation.position + mutation.size))
             logging.debug('affected features: {}'.format(affected_features))
@@ -203,11 +205,10 @@ class Component(Seq):
                 if feature.end < mutation.start or feature.start > mutation.end:
                     continue
 
-                features.remove(feature)
                 try:
                     changed_features.remove(feature)
                 except KeyError:
-                    pass
+                    features.remove(feature)
 
                 # TODO find untranslated equivalents and replace when all is over.
                 if mutation.start > feature.start:
@@ -246,11 +247,11 @@ class Component(Seq):
             # apply mutation to sequence:
             if mutation.new_size != mutation.size:  # insertion, deletion or delins
                 del sequence[translated_start:translated_start + mutation.size]
-                tt.delete(translated_start, mutation.size)
+                tt.delete(mutation.start, mutation.size)
 
                 if mutation.new_size != 0:  # insertion or DELINS
                     sequence = sequence[:translated_start] + mutation.new_sequence + sequence[translated_start:]
-                    tt.insert(translated_start, mutation.new_size)
+                    tt.insert(mutation.start, mutation.new_size)
             else:  # substitution:
                 if mutation.size == 1:  # SNP
                     sequence[translated_start] = mutation.new_sequence
@@ -259,7 +260,7 @@ class Component(Seq):
                         + mutation.new_sequence\
                         + sequence[translated_start + mutation.new_size:]
 
-                tt.substitute(translated_start, mutation.size)
+                tt.substitute(mutation.start, mutation.size)
 
             logging.debug('new sequence: "%s"', sequence)
             logging.debug('changed features: {}'.format(changed_features))
@@ -321,5 +322,6 @@ class Component(Seq):
     def fdiff(self, other):
         if other == self.parent:
             return Diff(added=self.features.added, removed=self.features.removed)
-        if other.parent == self:
-            return Diff(added=other.features.added, removed=other.features.removed)
+        elif other.parent == self:
+            return ~other.fdiff(self)
+        raise NotImplementedError()

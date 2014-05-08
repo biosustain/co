@@ -47,5 +47,9 @@ class ComponentTestCase(unittest.TestCase):
         pass
 
     @unittest.SkipTest
+    def test_feature_diff(self):
+        pass
+
+    @unittest.SkipTest
     def test_eq(self):
         pass

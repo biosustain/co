@@ -33,7 +33,7 @@ class HaploidOrganism(object):
         self.components = {}
         self.component_types = {}
 
-    def add(self, name, component, type_=None):
+    def set(self, name, component, type_=None):
         self.components[name] = component
         self.component_types = type_
 
