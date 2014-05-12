@@ -1,7 +1,8 @@
 from functools import wraps
-from flask import current_app, request
+
 from flask.ext.presst import Relationship, PresstResource, resource_method, fields, ModelResource
 from flask.ext.restful import marshal_with, unpack
+
 #from colib.server.models import cache
 from colib.mutations import Mutation
 from colib.server.models import Component, FeatureProxy, BoundMutation
@@ -22,11 +23,11 @@ class marshal_field(object):
                 data, code, headers = unpack(resp)
                 return self.field.format(data), code, headers
             return self.field.format(resp)
+
         return wrapper
 
 
 class ComponentResource(ModelResource):
-
     features = Relationship('FeatureResource')
     mutations = Relationship('MutationResource')
 
@@ -127,7 +128,7 @@ class FeatureResource(PresstResource):
 
     @resource_method('GET')
     def GET_translate(self, feature, component):
-        pass # TODO need to build a chained translation table.
+        pass  # TODO need to build a chained translation table.
 
     @resource_method('GET')
     #@cache.memoize()
@@ -138,18 +139,17 @@ class FeatureResource(PresstResource):
     def item_get_resource_uri(cls, item):
         if cls.api is None:
             raise RuntimeError("{} has not been registered as an API endpoint.".format(cls.__name__))
-        return '{0}/{1}/{2}'.format(cls.api.prefix, cls.resource_name, item.identifier) # FIXME handle both item and attr.
+        return '{0}/{1}/{2}'.format(cls.api.prefix, cls.resource_name,
+                                    item.identifier)  # FIXME handle both item and attr.
 
 
 class MutationResource(ModelResource):
-
     class Meta:
         resource_name = 'mutation'
         model = BoundMutation
 
 
 class StrainResource(PresstResource):
-
     @resource_method('GET')
     @marshal_with(fields.ToMany('StrainResource'))
     def GET_lineage(self, strain):

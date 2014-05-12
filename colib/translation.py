@@ -15,7 +15,6 @@ class OverlapError(Exception):
 
 
 class TranslationTable(object):
-
     def __init__(self,
                  source_size,
                  target_size,
@@ -76,7 +75,7 @@ class TranslationTable(object):
             the end of the target sequence alignment.
         :returns: the first position, equal or greater than `position` that exists in the query sequence.
         """
-        while True: # TODO a more efficient ge() implementation
+        while True:  # TODO a more efficient ge() implementation
             query_position = self[position]
             if query_position is not None:
                 return query_position
@@ -95,6 +94,7 @@ class TranslationTable(object):
 
         :returns: an iterator over all coordinates in both the source and target sequence.
         """
+
         def source():
             offset = self.source_start
             for ungapped_size, ds, dt in self.chain:
@@ -176,7 +176,7 @@ class TranslationTable(object):
         for ungapped_size, ds, dt in self.chain:
             gap_start = offset + ungapped_size
             source_gap_end = gap_start + ds
-            target_gap_end = gap_start + dt # NOTE might be ds
+            target_gap_end = gap_start + dt  # NOTE might be ds
 
             # print 'chain:', (ungapped_size, ds, dt)
             # print (ungapped_size, ds, dt, target_offset, position, offset)
@@ -197,7 +197,7 @@ class TranslationTable(object):
             else:
                 target_offset += ungapped_size + ds
                 offset += ungapped_size + dt
-            # print
+                # print
 
         logging.debug('offset, target_offset, position: ' + ', '.join(map(str, [offset, target_offset, position])))
         return target_offset + (position - offset)
@@ -309,7 +309,7 @@ class MutableTranslationTable(TranslationTable):
 
                 return
 
-            # TODO OverlapError if non-strict
+                # TODO OverlapError if non-strict
 
         else:
             offset = self.source_start
@@ -318,9 +318,11 @@ class MutableTranslationTable(TranslationTable):
                 print(i, position, ungapped_size, ds, dt)
 
                 gap_start = offset + ungapped_size
-                source_gap_end = gap_start + dt #- ds# NOTE might be ds
+                source_gap_end = gap_start + dt  #- ds# NOTE might be ds
 
-                logging.debug('source_gap_end={}; ({}) gap_start={}, dt={}, ds={}'.format(source_gap_end, position, gap_start, dt, ds))
+                logging.debug(
+                    'source_gap_end={}; ({}) gap_start={}, dt={}, ds={}'.format(source_gap_end, position, gap_start, dt,
+                                                                                ds))
                 #if position == offset:
                 #    raise NotImplementedError()
 
@@ -337,7 +339,6 @@ class MutableTranslationTable(TranslationTable):
                     elif ungapped_remainder == 0:  # reuse existing chain tuple
                         self.chain[i] = (gap_offset, ds + source_gap, dt + target_gap)
                         break
-
 
                     logging.warn(gap_offset)
                     self.chain.insert(i, (gap_offset, source_gap, target_gap))
@@ -364,11 +365,12 @@ class MutableTranslationTable(TranslationTable):
                 elif position < source_gap_end:
                     logging.debug(self.__dict__)
                     logging.debug('position={}, {} {}; offset={}'.format(position, source_gap, target_gap, offset))
-                    logging.debug('source_gap_end={}; gap_start={}, dt={}, ds={}'.format(source_gap_end, gap_start, dt, ds))
+                    logging.debug(
+                        'source_gap_end={}; gap_start={}, dt={}, ds={}'.format(source_gap_end, gap_start, dt, ds))
                     raise OverlapError('Cannot insert gap at {}: '
-                                           'Gap already present from {} to {}'.format(position,
-                                                                                      gap_start,
-                                                                                      source_gap_end))
+                                       'Gap already present from {} to {}'.format(position,
+                                                                                  gap_start,
+                                                                                  source_gap_end))
 
                 elif position == source_gap_end:
                     next_ungapped_size, next_ds, next_dt = self.chain[i + 1]

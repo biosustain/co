@@ -1,18 +1,17 @@
 from __future__ import unicode_literals
-import logging
-import unittest
+
 from flask import json
 from flask.ext.testing import TestCase
+
 from colib.mutations import DEL, INS
 from colib.server.models import db, Component, BoundFeature
-from colib.server.resources import ComponentResource
 import server
+
 
 # logging.basicConfig()
 # logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
 class ServerTestCase(TestCase):
-
     def create_app(self):
         server.app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://testuser:testpass@localhost/colibtestdb3'
         # server.app.config['SQLALCHEMY_ECHO'] = True
@@ -39,7 +38,8 @@ class ServerTestCase(TestCase):
             db.session.commit()
 
             outer_component_1 = Component('ATGC')
-            outer_component_1_feature = BoundFeature(component=outer_component_1, name='DNA-letters', position=1, size=4)
+            outer_component_1_feature = BoundFeature(component=outer_component_1, name='DNA-letters', position=1,
+                                                     size=4)
             outer_component_2 = Component('AAAATTTTGGGGCCCC', parent=outer_component_1)
 
             db.session.add(outer_component_1)
@@ -65,8 +65,8 @@ class ServerTestCase(TestCase):
         self.assertEqual(16, self.client.get('/component/5/size').json)
 
     def test_children(self):
-         self.assertEqual(['/component/2'], self.client.get('/component/1/children').json)
-         self.assertEqual([], self.client.get('/component/3/children').json)
+        self.assertEqual(['/component/2'], self.client.get('/component/1/children').json)
+        self.assertEqual([], self.client.get('/component/3/children').json)
 
     def test_lineage(self):
         self.assertEqual(['/component/1', '/component/2', '/component/3'], self.client.get('/component/3/lineage').json)
@@ -74,7 +74,6 @@ class ServerTestCase(TestCase):
         self.assertEqual([], self.client.get('/component/1/lineage?inclusive=False').json)
 
     def test_inherited_features(self):
-
         self.assertEqual([{'type': 'TATA_box',
                            'name': None,
                            'resource_uri': '/feature/1.1',

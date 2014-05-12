@@ -1,11 +1,11 @@
 import logging
 import unittest
+
 from colib import MutableTranslationTable
 from colib.translation import OverlapError
 
 
 class TranslationTableTestCase(unittest.TestCase):
-
     def setUp(self):
         self.sequence = 'ABCDEFGHIJ'
         self.tt = MutableTranslationTable(len(self.sequence))
@@ -219,14 +219,12 @@ class TranslationTableTestCase(unittest.TestCase):
 
         tt.delete(5, 2)
 
-
         logging.debug(tt.__dict__)
 
         self.assertEqual([0, 1, 2, 3, 4, 4, 4, 5, 6, 7], [tt.le(i) for i in range(10)])
 
         tt.delete(9, 1)
         logging.debug(tt.__dict__)
-
 
         self.assertEqual([0, 1, 2, 3, 4, None, None, 5, 6, None], list(tt))
         self.assertEqual([0, 1, 2, 3, 4, 4, 4, 5, 6, 6], [tt.le(i) for i in range(10)])

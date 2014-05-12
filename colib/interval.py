@@ -1,5 +1,7 @@
 from abc import ABCMeta, abstractproperty
+
 import six
+
 
 __all__ = ('IntervalTree', 'BaseInterval', 'Interval')
 
@@ -107,6 +109,7 @@ class BaseInterval(six.with_metaclass(ABCMeta, object)):
 
     .. attribute:: end
     """
+
     @abstractproperty
     def start(self):
         raise NotImplementedError()

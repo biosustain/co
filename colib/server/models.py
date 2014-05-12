@@ -1,20 +1,21 @@
 from flask.ext.sqlalchemy import SQLAlchemy
 from sqlalchemy import func, CheckConstraint, select, not_
-from sqlalchemy.dialects import postgres
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import backref, deferred, aliased
 from werkzeug.utils import cached_property
+
 import colib
+
 
 db = SQLAlchemy()
 
-
 component_removed_features_map = db.Table('component_removed_features_map',
-    db.Column('component_id', db.Integer, db.ForeignKey('component.id'), primary_key=True),
-    db.Column('feature_id', db.Integer, primary_key=True),
-    db.Column('feature_component_id', db.Integer, primary_key=True),
-    db.ForeignKeyConstraint(['feature_id', 'feature_component_id'], ['feature.id', 'feature.component_id']))
+                                          db.Column('component_id', db.Integer, db.ForeignKey('component.id'),
+                                                    primary_key=True),
+                                          db.Column('feature_id', db.Integer, primary_key=True),
+                                          db.Column('feature_component_id', db.Integer, primary_key=True),
+                                          db.ForeignKeyConstraint(['feature_id', 'feature_component_id'],
+                                                                  ['feature.id', 'feature.component_id']))
 
 
 class Component(db.Model):
@@ -86,45 +87,45 @@ class Component(db.Model):
             ORDER BY feature.position
         """
         if include_inherited:
-            parent_components = db.session.query(Component.id, Component.parent_id)\
-                .filter(Component.id==self.id)\
+            parent_components = db.session.query(Component.id, Component.parent_id) \
+                .filter(Component.id == self.id) \
                 .cte(name="parent_components", recursive=True)
 
             parents_alias = aliased(parent_components, name='a')
             components_alias = aliased(Component, name="c")
             parent_components = parent_components.union_all(
-                db.session.query(components_alias.id, components_alias.parent_id)\
-                    .filter(components_alias.id==parents_alias.c.parent_id))
+                db.session.query(components_alias.id, components_alias.parent_id) \
+                .filter(components_alias.id == parents_alias.c.parent_id))
 
-            deleted_from_ancestor = db.session.query(component_removed_features_map)\
+            deleted_from_ancestor = db.session.query(component_removed_features_map) \
                 .filter(component_removed_features_map.c.component_id.in_(select([parent_components.c.id])),
                         component_removed_features_map.c.feature_component_id == BoundFeature.component_id,
                         component_removed_features_map.c.feature_id == BoundFeature.id).exists()
 
-            query = BoundFeature.query\
-                .filter(BoundFeature.component_id == parent_components.c.id)\
-                .filter(not_(deleted_from_ancestor))\
+            query = BoundFeature.query \
+                .filter(BoundFeature.component_id == parent_components.c.id) \
+                .filter(not_(deleted_from_ancestor)) \
                 .order_by(BoundFeature.position)
 
             # TODO need to return some kind of feature-queryset proxy that converts to a FeatureProxy only when the result is loaded.
             return (FeatureProxy.from_record(feature, self) for feature in query)
         else:
             return self.added_features
-        # TODO map.
+            # TODO map.
 
     def get_lineage(self, inclusive=True):
         """
 
         """
-        ancestors = db.session.query(Component.id, Component.parent_id)\
-            .filter(Component.id==self.id)\
+        ancestors = db.session.query(Component.id, Component.parent_id) \
+            .filter(Component.id == self.id) \
             .cte(name="ancestors", recursive=True)
 
         ancestors_alias = aliased(ancestors, name='a')
         components_alias = aliased(Component, name="c")
         ancestors = ancestors.union_all(
             db.session.query(components_alias.id, components_alias.parent_id)
-                .filter(components_alias.id == ancestors_alias.c.parent_id))
+            .filter(components_alias.id == ancestors_alias.c.parent_id))
 
         filter_id = ancestors.c.id if inclusive else ancestors.c.parent_id
         return Component.query.filter(Component.id == filter_id)
@@ -244,7 +245,8 @@ class BoundMutation(db.Model):
 
 
 class FeatureProxy(colib.Feature):
-    def __init__(self, component, position, size, record=None, record_id=None, strand=None, type=None, name=None, translated_view=None):
+    def __init__(self, component, position, size, record=None, record_id=None, strand=None, type=None, name=None,
+                 translated_view=None):
         super(FeatureProxy, self).__init__(component, position, size, strand=None, type=type, name=name)
         self.record = record
         self.record_id = record_id
@@ -354,7 +356,7 @@ class BoundFeature(db.Model):
             strand=self.strand,
             type=self.type,
             source=self.source,
-            source_sequence_is_match=False # TODO compute source sequence match.
+            source_sequence_is_match=False  # TODO compute source sequence match.
         )
 
     @hybrid_property

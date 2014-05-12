@@ -1,12 +1,11 @@
 # coding: utf-8
-from itertools import permutations
 import unittest
+
 from colib import Component
 from colib.mutations import DEL, INS
 
 
 class FeatureTestCase(unittest.TestCase):
-
     def test_add_features(self):
         component = Component('GAGAGAGATATAGAGAGA')
         component.features.add(8, 4, name='tata', qualifiers={'a': 1})
@@ -17,12 +16,12 @@ class FeatureTestCase(unittest.TestCase):
 
     def test_inherit_features(self):
         component = Component('ABCDEFGHIerrorJKLMNOPQRSTUVXYZ')
-        component.features.add(0, 3, name='abc') # fine
-        component.features.add(9, 5, name='error') # fine
+        component.features.add(0, 3, name='abc')  # fine
+        component.features.add(9, 5, name='error')  # fine
         component.features.add(6, 6, name='GHI..err')
         component.features.add(11, 6, name='ror..JKL')
-        component.features.add(8, 7, name='I..error..J') # fine
-        component.features.add(29, 1, name='end') # fine
+        component.features.add(8, 7, name='I..error..J')  # fine
+        component.features.add(29, 1, name='end')  # fine
 
         mutated = component.mutate([DEL(9, 5)])
 

@@ -2,8 +2,9 @@
 TODO consider namedtuple.
 """
 
+
 class UniqueIdentifier(object):
-    def __init__(self, type, identifier): # TODO alt. names, databases
+    def __init__(self, type, identifier):  # TODO alt. names, databases
         self.type = type
         self.identifier = identifier
 
@@ -15,8 +16,7 @@ class UniqueIdentifier(object):
 
 
 class Version(UniqueIdentifier):
-
-    def __init__(self, type, identifier, version_number): # TODO alt. names, databases
+    def __init__(self, type, identifier, version_number):  # TODO alt. names, databases
         super(Version, self).__init__(type, identifier)
         self.version_number = version_number
 
@@ -26,5 +26,5 @@ class Version(UniqueIdentifier):
 
 class DatabaseXRef(UniqueIdentifier):
     pass
-                     # /db_xref="GI:296146166"
-                     # /db_xref="GeneID:853656"
+    # /db_xref="GI:296146166"
+    # /db_xref="GeneID:853656"

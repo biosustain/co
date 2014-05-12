@@ -1,10 +1,10 @@
 import heapq
 import logging
+
 from colib.interval import IntervalTree, BaseInterval
 
 
 class FeatureSet(object):
-
     def __init__(self, feature_class=None):
         if feature_class is None:
             feature_class = Feature
@@ -63,7 +63,6 @@ class FeatureSet(object):
 
 
 class ComponentFeatureSet(FeatureSet):
-
     def __init__(self, component, **kwargs):
         super(ComponentFeatureSet, self).__init__(**kwargs)
         self.component = component
@@ -118,7 +117,8 @@ class ComponentFeatureSet(FeatureSet):
             print(self, start, end, len(self.component), len(tt))
             print(tt.ge(start))
             print(tt.le(end))
-            logging.debug('find_overlapping({}, {}): inherited between {} and {}'.format(start, end, tt.ge(start), tt.le(end)))
+            logging.debug(
+                'find_overlapping({}, {}): inherited between {} and {}'.format(start, end, tt.ge(start), tt.le(end)))
             intersect |= self.parent_feature_set.overlap(tt.ge(start), tt.le(end)) - self.removed_features
         return intersect
 
@@ -127,7 +127,6 @@ FORWARD_STRAND, REVERSE_STRAND = 1, -1
 
 
 class Feature(BaseInterval):
-
     def __init__(self, component, position, size, strand=None, type=None, **attributes):
         self._component = component
         self._position = int(position)
@@ -147,11 +146,11 @@ class Feature(BaseInterval):
 
     def move(self, position, size=None, component=None):
         return self.__class__((component or self._component),
-                       position,
-                       size or self.size,
-                       strand=self.strand,
-                       type=self.type,
-                       **self._attributes)
+                              position,
+                              size or self.size,
+                              strand=self.strand,
+                              type=self.type,
+                              **self._attributes)
 
     @property
     def type(self):
@@ -246,6 +245,7 @@ class Annotation(object):
     versions without having to deal with all the complexities of mutations.
 
     """
+
     def __init__(self, position, size, **attributes):
         self.position = position
         self.size = size

@@ -1,6 +1,8 @@
 import unittest
+
 from Bio.Alphabet import Alphabet
 import six
+
 from colib import Component, Feature
 from colib.converters import GenbankConverter, JSONConverter
 from colib.mutations import SNP, Mutation
@@ -8,9 +10,7 @@ from colib.organisms import HaploidOrganism
 
 
 class HaploidOrganismTestCase(unittest.TestCase):
-
     def test_list_features(self):
-
         c1 = Component('A' * 10)
         c1.features.add(1, 10, type='repeat')
 
@@ -36,7 +36,7 @@ class HaploidOrganismTestCase(unittest.TestCase):
         genome.features.add(0, 25, type='a')
         genome.features.add(25, 25, type='c')
         feature_3 = genome.features.add(50, 25, type='g')
-        feature_4 = genome.features.add(75, 25, type='t') # FIXME 75 should be possible, no?
+        feature_4 = genome.features.add(75, 25, type='t')  # FIXME 75 should be possible, no?
 
         strain.set('genome', genome)
 
@@ -52,7 +52,7 @@ class HaploidOrganismTestCase(unittest.TestCase):
         new_genome = strain.components['genome'].mutate(mutations)
 
         new_strain = HaploidOrganism('strain-2', parent=strain)
-        new_strain.set('genome', new_genome) # sets genome.
+        new_strain.set('genome', new_genome)  # sets genome.
 
         self.assertEqual(False, feature_3 in new_strain.features)
         self.assertEqual(False, feature_4 in new_strain.features)

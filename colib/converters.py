@@ -1,11 +1,14 @@
 import json
-from Bio import SeqIO
 import re
+
+from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.SeqRecord import SeqRecord
+
 from colib.components import Component
 from colib.features import Feature
 from colib.identifiers import UniqueIdentifier
+
 
 __all__ = (
     'Converter',
@@ -103,8 +106,8 @@ GENBANK_SINGLE_QUALIFIERS = (
     'rpt_family',
 )
 
-class Converter(object):
 
+class Converter(object):
     @classmethod
     def from_file(cls, file):
         raise NotImplementedError()
@@ -115,7 +118,6 @@ class Converter(object):
 
 
 class GenbankConverter(Converter):
-
     @classmethod
     def from_file(cls, file):
         record = SeqIO.read(file, 'genbank')
@@ -144,7 +146,7 @@ class GenbankConverter(Converter):
                 if name in feature.qualifiers:
                     feature_qualifiers[name] = feature.qualifiers[name][0]
 
-            component.features\
+            component.features \
                 .add(feature.location.start,
                      size=len(feature),
                      strand=feature.location.strand,
@@ -209,7 +211,6 @@ class _ComponentEncoder(json.JSONEncoder):
 
 
 class JSONConverter(Converter):
-
     @classmethod
     def to_file(cls, component, file, record_id=None):
         file.write(json.dumps(component, cls=_ComponentEncoder))

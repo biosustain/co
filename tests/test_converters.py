@@ -1,13 +1,13 @@
 from collections import Counter
 import unittest
+
 from Bio.Alphabet import DNAAlphabet
-from Bio.Seq import Seq
+
 from colib import Component
 from colib.converters import GenbankConverter
 
 
 class GenbankConverterTestCase(unittest.TestCase):
-
     def test_phr332_import(self):
         filename = 'fixtures/pbr322-sample-sequence.gb'
 
@@ -30,7 +30,7 @@ class GenbankConverterTestCase(unittest.TestCase):
         )
 
         feature_0 = list(component.features)[0]
-        feature_2 = list(component.features)[2]    # minus strand
+        feature_2 = list(component.features)[2]  # minus strand
         feature_15 = list(component.features)[15]  # minus strand
 
         self.assertEqual('TTGACA', str(feature_0.sequence))

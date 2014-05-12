@@ -1,14 +1,11 @@
 # coding: utf-8
-import heapq
 import logging
 
 from Bio import Alphabet
 from Bio.Seq import Seq
-from blinker import Signal
 
 from colib.difference import Diff
 from colib.features import Feature, ComponentFeatureSet
-from colib.interval import IntervalTree
 from colib.translation import OverlapError, MutableTranslationTable
 
 
@@ -29,6 +26,7 @@ class Component(Seq):
     .. seealso:: :class:`Bio.Seq`
 
     """
+
     def __init__(self,
                  sequence='',
                  alphabet=Alphabet.generic_alphabet,
@@ -76,7 +74,7 @@ class Component(Seq):
         if copy_features:
             raise NotImplementedError("Copying features from old components into new ones is not currently supported.")
 
-        # TODO
+            # TODO
 
     @property
     def parent(self):
@@ -159,7 +157,8 @@ class Component(Seq):
                 except IndexError:
                     try:
                         translated_start = tt.le(mutation.position)
-                        logging.debug('translated start: nonstrict=%s; strict=%s', translated_start, tt[mutation.position])
+                        logging.debug('translated start: nonstrict=%s; strict=%s', translated_start,
+                                      tt[mutation.position])
                     except IndexError:
                         raise OverlapError("Cannot find non-strict mutation coordinate in mutated sequence.")
 
@@ -200,8 +199,8 @@ class Component(Seq):
                 if mutation.start > feature.start:
                     if mutation.end < feature.end or mutation.size == 0:  # mutation properly contained in feature.
                         logging.debug('FMMF from {} to {}({})'.format(
-                            feature.start, # tt.ge(feature.start),
-                            feature.end, # tt.le(feature.end),
+                            feature.start,  # tt.ge(feature.start),
+                            feature.end,  # tt.le(feature.end),
                             feature.end - mutation.size + mutation.new_size))
 
                         changed_features.add(feature.move(feature.start,
@@ -219,7 +218,7 @@ class Component(Seq):
 
                         changed_features.add(feature.move(mutation.end + 1, feature.end - mutation.end))
                     else:
-                        pass # feature removed and not replaced.
+                        pass  # feature removed and not replaced.
                         logging.debug('MFFM feature removed')
 
             logging.debug('applying mutation: at %s("%s") translating from %s("%s") delete %s bases and insert "%s"',
@@ -242,9 +241,9 @@ class Component(Seq):
                 if mutation.size == 1:  # SNP
                     sequence[translated_start] = mutation.new_sequence
                 else:
-                    sequence = sequence[:translated_start]\
-                        + mutation.new_sequence\
-                        + sequence[translated_start + mutation.new_size:]
+                    sequence = sequence[:translated_start] \
+                               + mutation.new_sequence \
+                               + sequence[translated_start + mutation.new_size:]
 
                 tt.substitute(mutation.start, mutation.size)
 

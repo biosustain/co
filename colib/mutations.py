@@ -1,5 +1,6 @@
 import six
 from Bio.Seq import Seq
+
 from colib import Component
 
 
@@ -36,6 +37,7 @@ class Mutation(object):
         Start index of the mutation, zero-based.
 
     """
+
     def __init__(self, position, size=None, new_sequence='', end=None):
         assert isinstance(new_sequence, six.string_types + (Seq, Component))
         assert size is None or size >= 0
@@ -60,7 +62,7 @@ class Mutation(object):
         return self.position
 
     @property
-    def end(self): # FIXME *dangerous* needs review.
+    def end(self):  # FIXME *dangerous* needs review.
         if self.size in (0, 1):
             return self.position
         return self.position + self.size - 1
@@ -115,5 +117,6 @@ class INS(Mutation):
     :param bool replace: if ``True``, eliminates the original character at the position. Some variant call formats keep
         the first character of the original sequence in the replacement sequence.
     """
+
     def __init__(self, pos, new_sequence, replace=False):
         super(INS, self).__init__(pos, int(replace), new_sequence)
