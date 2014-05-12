@@ -24,6 +24,9 @@ class FeatureSet(object):
         for f in self._features:
             yield f
 
+    def __repr__(self):
+        return '{}({{{}}})'.format(self.__class__.__name__, ', '.join(map(str, self)))
+
     def copy(self):
         fs = FeatureSet(feature_class=self._feature_class)
         fs._features = self._features.copy()
@@ -220,6 +223,7 @@ class Feature(BaseInterval):
 
     def __repr__(self):
         args = '{}, {}, {}'.format(repr(self.component), self.position, self.size)
+        #return str(self.sequence)
 
         if self.type:
             args = '{}, type="{}"'.format(args, self.type)

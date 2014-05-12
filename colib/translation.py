@@ -183,13 +183,13 @@ class TranslationTable(object):
             # print position < offset + ungapped_size, position < offset + ungapped_size + dt
             if position < gap_start:  # target position is in this ungapped block
                 # FIXME the <= is wrong, but necessary for some tests to work. The worst kind of wrong.
-                logging.debug('{}: {} {} {} {}'.format(
-                    position,
-                    ungapped_size,
-                    ds,
-                    dt,
-                    target_offset + (position - offset)
-                ))
+                # logging.debug('{}: {} {} {} {}'.format(
+                #     position,
+                #     ungapped_size,
+                #     ds,
+                #     dt,
+                #     target_offset + (position - offset)
+                # ))
                 return target_offset + (position - offset)
             elif position < target_gap_end:
                 return None  # position falls into a gap in the query sequence (i.e. a deletion)

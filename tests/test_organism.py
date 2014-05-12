@@ -35,50 +35,37 @@ class HaploidOrganismTestCase(unittest.TestCase):
         genome = Component('A' * 25 + 'C' * 25 + 'G' * 25 + 'T' * 25)
         genome.features.add(0, 25, type='a')
         genome.features.add(25, 25, type='c')
-        feature_4 = genome.features.add(50, 25, type='g')
-        feature_5 = genome.features.add(75, 25, type='t') # FIXME 75 should be possible, no?
+        feature_3 = genome.features.add(50, 25, type='g')
+        feature_4 = genome.features.add(75, 25, type='t') # FIXME 75 should be possible, no?
 
         strain.set('genome', genome)
 
-        print(feature_4, feature_4.end, len(genome))
         mutations = [
             SNP(7, 'T'),
             SNP(30, 'G'),
             Mutation(31, 3, ''),
             Mutation(40, new_sequence='GATGA'),
-            Mutation(feature_4.start, end=feature_4.end - 5),
-            Mutation(feature_5.start, end=feature_5.end, new_sequence=Component('GAGAGA'))
+            Mutation(feature_3.start, end=feature_3.end - 5),
+            Mutation(feature_4.start, end=feature_4.end, new_sequence=Component('GAGAGA'))
         ]
 
-        print(mutations)
-
         new_genome = strain.components['genome'].mutate(mutations)
-
-        print(str(new_genome))
-        print(list(new_genome.features))
-
 
         new_strain = HaploidOrganism('strain-2', parent=strain)
         new_strain.set('genome', new_genome) # sets genome.
 
+        self.assertEqual(False, feature_3 in new_strain.features)
         self.assertEqual(False, feature_4 in new_strain.features)
-        self.assertEqual(False, feature_5 in new_strain.features)
 
-        print('----------------------------')
-        print(new_genome.fdiff(genome))
         self.assertEqual(1, len(new_strain.diff(strain)))  # 'genome' changed
+        self.assertEqual('AAAAAAATAAAAAAAAAAAAAAAAACCCCCGCCCCCCGATGACCCCCCCCCCGGGGGGAGAGA', str(new_genome))
 
         genome_fdiff = new_strain.components['genome'].fdiff(strain.components['genome'])
-
         self.assertEqual(set(genome.features), set(genome_fdiff.removed))  # all features removed/changed
-
-        self.assertEqual('AAAAAAATAAAAAAAAAAAAAAAAACCCCCGCCCCCCGATGACCCCCCCCCCGGGGGGAGAGA', str(new_genome))
         self.assertEqual({
-                       #      Feature(new_genome, 64, 1, type="t"),
                              Feature(new_genome, 0, 25, type="a"),
                              Feature(new_genome, 52, 5, type="g"),
                              Feature(new_genome, 25, 25, type="c")}, set(genome_fdiff.added))
-
 
     @unittest.SkipTest
     def test_yeast(self):

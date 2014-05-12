@@ -31,27 +31,26 @@ class FeatureTestCase(unittest.TestCase):
         # TODO insert mutation (need to test mutation.size = 0)
         # TODO snp mutation (need to test link breaking).
 
-    def test_feature_del_ins_order(self):
+    def test_feature_non_strict_order(self):
+        """
+        In non-strict mode, potentially ambiguous mutations are allowed where the order in which
+        the order in which the mutations are applied is significant.
+        """
         component = Component('12345')
         component.features.add(2, 2, name='34')
 
-        # Tests the memory function of the mutation process. The memory has to reduce the
-        # feature to the coordinate that would be most appropriate given the original position.
         #   |████|      |████|
         # 12|3  4|5   12|3  4|5
-        # 12|3xy4|5   12|3  |-5
-        # 12|3xy|-5   12|3xy|-5
+        # 12|3xy4|5   12|3| - 5
+        # 12|3xy|-5   12|3| xy5
 
-        for order in permutations([DEL(3), INS(3, 'xy')]):
-            print('order',order)
-            features = component.mutate(order, strict=False).features
-            print(features)
-            try:
-                print(str(list(features)[0].sequence), '<<<<<<<<<<<<<<<<<')
-                self.assertEqual('3xy', str(list(features)[0].sequence))
-            except IndexError:
-                self.fail()
+        mutated_1 = component.mutate([DEL(3), INS(3, 'xy')], strict=False)
+        self.assertEqual('3', str(list(mutated_1.features)[0].sequence))  # 3xy would also be acceptable.
+        self.assertEqual('123xy5', str(mutated_1))
 
+        mutated_2 = component.mutate([INS(3, 'xy'), DEL(3)], strict=False)
+        self.assertEqual('3xy', str(list(mutated_2.features)[0].sequence))
+        self.assertEqual('123xy5', str(mutated_2))
 
     def test_inherit_features_removed(self):
         pass

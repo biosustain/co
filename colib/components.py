@@ -12,12 +12,6 @@ from colib.interval import IntervalTree
 from colib.translation import OverlapError, MutableTranslationTable
 
 
-def diff(original, other):
-    if original.precursor == other:
-        return original._mutations
-    raise NotImplementedError()  # TODO if original.inherits(other)
-
-
 class Component(Seq):
     """
     If the underlying library supports it, mutated `Component` objects can be stored as a set of the features
@@ -35,15 +29,10 @@ class Component(Seq):
     .. seealso:: :class:`Bio.Seq`
 
     """
-    on_feature_added = Signal()
-    on_feature_removed = Signal()
-    on_internal_mutation = Signal()
-
     def __init__(self,
                  sequence='',
                  alphabet=Alphabet.generic_alphabet,
                  parent=None,
-                 storage=None,
                  meta=None,
                  display_id=None,
                  feature_class=Feature):
@@ -57,7 +46,6 @@ class Component(Seq):
 
         self._parent = parent
         self._sequence = sequence
-        self._storage = storage
         self._mutations = ()
         self._mutations_tt = MutableTranslationTable.from_mutations(self, self._mutations)
         self.display_id = display_id
@@ -89,14 +77,6 @@ class Component(Seq):
             raise NotImplementedError("Copying features from old components into new ones is not currently supported.")
 
         # TODO
-
-    @property
-    def id(self):
-        return self.display_id
-
-    @property
-    def length(self):
-        return len(self._sequence)
 
     @property
     def parent(self):
@@ -147,7 +127,7 @@ class Component(Seq):
         features = component.features
         sequence = self.tomutable()
 
-        tt = MutableTranslationTable(self.length) if clone else self._mutations_tt
+        tt = MutableTranslationTable(len(self)) if clone else self._mutations_tt
         changed_features = set()
 
         logging.debug('original features: {}'.format(list(self.features)))
@@ -166,16 +146,22 @@ class Component(Seq):
             # FIXME handle addition to end of sequence.
             # FIXME requires proper handling of r/q_end to find out new size.
 
+            logging.debug('')
             logging.debug('---> mutation: "%s"', mutation)
 
             if strict:
                 translated_start = tt[mutation.position]
             else:
                 try:
-                    translated_start = tt.le(mutation.position)
+                    logging.debug(tt.__dict__)
+                    translated_start = tt.ge(mutation.position)
                     logging.debug('translated start: nonstrict=%s; strict=%s', translated_start, tt[mutation.position])
                 except IndexError:
-                    raise OverlapError()
+                    try:
+                        translated_start = tt.le(mutation.position)
+                        logging.debug('translated start: nonstrict=%s; strict=%s', translated_start, tt[mutation.position])
+                    except IndexError:
+                        raise OverlapError("Cannot find non-strict mutation coordinate in mutated sequence.")
 
             # TODO strict mode implementation that also fires on other overlaps.
 
@@ -292,16 +278,16 @@ class Component(Seq):
 
     def get_lineage(self):
         component = self
-        while self.parent:
-            component = self.parent
+        while component.parent:
+            component = component.parent
             yield component
 
-    def inherits(self, other):
+    def inherits_from(self, other):
         """
         Returns `True` if this object is a mutated version of `other`, `False` otherwise.
         :returns: Boolean
         """
-        raise NotImplementedError()
+        return other in self.get_lineage()
 
     # noinspection PyProtectedMember
     def diff(self, other):
