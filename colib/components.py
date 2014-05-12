@@ -1,11 +1,13 @@
 # coding: utf-8
+from functools import reduce
 import logging
 
 from Bio import Alphabet
 from Bio.Seq import Seq
+import operator
 
 from colib.difference import Diff
-from colib.features import Feature, ComponentFeatureSet
+from colib.features import Feature, ComponentFeatureSet, Source
 from colib.translation import OverlapError, MutableTranslationTable
 
 
@@ -57,9 +59,9 @@ class Component(Seq):
         raise KeyError("Translation table from {} to {} cannot be accessed.".format(repr(self), repr(ancestor)))
 
     @classmethod
-    def from_components(cls, components, copy_features=False):
+    def from_components(cls, *components, **kwargs):
         """
-        Joins multiple components together, creating a feature annotation for each.
+        Joins multiple components together, creating a source feature annotation for each.
 
         .. warning::
 
@@ -70,11 +72,33 @@ class Component(Seq):
 
         :param copy_features: When `copy_features` is set, no features with links to the original components will be
             created.
-        """
-        if copy_features:
-            raise NotImplementedError("Copying features from old components into new ones is not currently supported.")
 
-            # TODO
+        :param alphabet: Alphabet to use for the component. If not given, the alphabet for the first component
+            will be used.
+        """
+        copy_features = kwargs.pop('copy_features', False)
+        alphabet = kwargs.pop('alphabet', None)
+
+        if not components:
+            return Component('')
+
+        sequence = reduce(operator.add, components)
+        combined = Component(sequence=sequence, alphabet=alphabet or components[0].alphabet)
+
+        if copy_features:
+            offset = 0
+            for component in components:
+                for feature in component.features:
+                    combined.features.add(feature.move(offset + feature.position, component=combined))
+                offset += len(component)
+        else:
+            offset = 0
+            for component in components:
+                combined.features.add(offset, size=len(component), source=Source(component))
+                offset += len(component)
+
+        return combined
+
 
     @property
     def parent(self):

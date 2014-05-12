@@ -1,3 +1,4 @@
+import weakref
 import heapq
 import logging
 
@@ -25,7 +26,7 @@ class FeatureSet(object):
             yield f
 
     def __repr__(self):
-        return '{}({{{}}})'.format(self.__class__.__name__, ', '.join(map(str, self)))
+        return '{}({})'.format(self.__class__.__name__, list(self))
 
     def copy(self):
         fs = FeatureSet(feature_class=self._feature_class)
@@ -225,11 +226,11 @@ class Feature(BaseInterval):
         #return str(self.sequence)
 
         if self.type:
-            args = '{}, type="{}"'.format(args, self.type)
+            args = '{}, type=\'{}\''.format(args, self.type)
         if self.strand:
-            args = '{}, strand="{}"'.format(args, self.strand)
+            args = '{}, strand=\'{}\''.format(args, self.strand)
         if self._attributes:
-            args = '{} {}'.format(args, ', '.join('{}={}'.format(k, v) for k, v in self._attributes.items()))
+            args = '{}, {}'.format(args, ', '.join('{}={}'.format(k, repr(v)) for k, v in self._attributes.items()))
 
         return '{}({})'.format(self.__class__.__name__, args)
 
@@ -257,3 +258,38 @@ class Annotation(object):
     def translate(self, from_component, to_component):
         raise NotImplementedError()
 
+
+class Source(object):
+    def __init__(self, component, broken=False):
+        from colib import Component
+        if isinstance(component, Component):
+            self._component_ref = weakref.ref(component)
+            self._identifier = component.display_id
+        else:
+            self._identifier = component
+        self.is_broken = broken
+
+    @property
+    def component(self):
+        if self._component_ref:
+            return self._component_ref()
+        return None
+
+    @property
+    def identifier(self):
+        return self._identifier
+
+    def make_broken(self):
+        if self.is_broken:
+            return self
+        return Source(self.component or self.identifier, broken=True)
+
+    def __eq__(self, other):
+        if isinstance(other, Source):
+            return self.component == other.component and \
+                   self.identifier == other.identifier and \
+                   self.is_broken == other.is_broken
+        return False
+
+    def __repr__(self):
+        return 'Source({}, broken={})'.format(repr(self.component or self.identifier), self.is_broken)
