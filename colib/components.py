@@ -256,11 +256,11 @@ class Component(Seq):
             # apply mutation to sequence:
             if mutation.new_size != mutation.size:  # insertion, deletion or delins
                 del sequence[translated_start:translated_start + mutation.size]
-                tt.delete(mutation.start, mutation.size)
+                tt.delete(mutation.start, mutation.size, strict)
 
                 if mutation.new_size != 0:  # insertion or DELINS
                     sequence = sequence[:translated_start] + mutation.new_sequence + sequence[translated_start:]
-                    tt.insert(mutation.start, mutation.new_size)
+                    tt.insert(mutation.start, mutation.new_size, strict)
             else:  # substitution:
                 if mutation.size == 1:  # SNP
                     sequence[translated_start] = mutation.new_sequence
@@ -269,7 +269,7 @@ class Component(Seq):
                                + mutation.new_sequence \
                                + sequence[translated_start + mutation.new_size:]
 
-                tt.substitute(mutation.start, mutation.size)
+                tt.substitute(mutation.start, mutation.size, strict)
 
             logging.debug('new sequence: "%s"', sequence)
             logging.debug('changed features: {}'.format(changed_features))
