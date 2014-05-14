@@ -355,28 +355,29 @@ class MutableTranslationTable(TranslationTable):
                         raise OverlapError('Cannot insert gap at {}: '
                                            'Target sequence gap already present at this position.'.format(position))
 
-                    if strict and target_gap:
-                        raise OverlapError('Strict gap insert at {} overlaps existing gap start.'.format(position))
+                    if target_gap:
+                        if strict:
+                            raise OverlapError('Strict gap insert at {} overlaps existing gap start.'.format(position))
 
-                    # TODO change this code to an iterative version to support deletions that cross multiple gaps:
-                    try:
-                        next_ungapped_size, next_ds, next_dt = self.chain[i + 1]
-                        next_ungapped_remainder = next_ungapped_size - target_gap
+                        # TODO change this code to an iterative version to support deletions that cross multiple gaps:
+                        try:
+                            next_ungapped_size, next_ds, next_dt = self.chain[i + 1]
+                            next_ungapped_remainder = next_ungapped_size - target_gap
 
-                        if next_ungapped_remainder == 0:
-                            self.chain.pop(i + 1)
-                            ds += next_ds
-                            dt += next_dt
-                        elif next_ungapped_remainder < 0:
-                            raise OverlapError('Deletion at {} '
-                                               'extends through following gap at {}'.format(position,
-                                                                                            position + target_gap))
-                            # TODO make recursive here instead
-                        else:
-                            self.chain[i + 1] = (next_ungapped_size - target_gap, next_ds, next_dt)
+                            if next_ungapped_remainder == 0:
+                                self.chain.pop(i + 1)
+                                ds += next_ds
+                                dt += next_dt
+                            elif next_ungapped_remainder < 0:
+                                raise OverlapError('Deletion at {} '
+                                                   'extends through following gap at {}'.format(position,
+                                                                                                position + target_gap))
+                                # TODO make recursive here instead
+                            else:
+                                self.chain[i + 1] = (next_ungapped_size - target_gap, next_ds, next_dt)
 
-                    except IndexError:
-                        raise
+                        except IndexError:
+                            raise
 
                     self.chain[i] = (ungapped_size, ds + source_gap, dt + target_gap)
 
