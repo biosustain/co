@@ -15,6 +15,37 @@ class OverlapError(Exception):
 
 
 class TranslationTable(object):
+    """
+    This class is inspired by the UCSC chain format for pairwise alignments documented here:
+
+    http://genome.ucsc.edu/goldenPath/help/chain.html
+
+    :class:`TranslationTable` encodes an alignment between two sequences, *source* and *target*.
+
+    The alignment is encoded in a chain of tuples in the format ``(ungapped_size, ds, dt)``, where
+    ``ungapped_size`` refers to regions that align, and the gaps ``dt`` and ``ds`` each refer to regions present
+    only in the other sequence.
+
+
+    .. attribute:: source_start
+
+        The first position in the source sequence that aligns with the target sequence
+
+    .. attribute:: source_end
+
+        The last position in the source sequence that aligns with the target sequence.
+
+    .. attribute: source_size
+
+    .. attribute: target_start
+
+    .. attribute: target_end
+
+    .. attribute: target_size
+
+    .. attribute: chain
+
+    """
     def __init__(self,
                  source_size,
                  target_size,
@@ -209,22 +240,9 @@ class MutableTranslationTable(TranslationTable):
     """
     :param size: the length of the source sequence
 
-    This class is inspired by the UCSC chain format for pairwise alignments documented here:
+    A mutable version of :class:`TranslationTable` with `insert`, `delete` and `substitute` methods for updating
+    the translation table with the corresponding mutations.
 
-        http://genome.ucsc.edu/goldenPath/help/chain.html
-
-
-    :class:`TranslationTable` encodes an alignment between two sequences, *source* and *target*, as a result
-    of a sequence of mutations. Each mutation is either a `delete`, `insert`, or `substitute` operation where
-    `substitute` is shorthand for a deletion followed by an insertion of equal size.
-
-    .. attribute:: source_start
-
-        The first position in the source sequence that aligns with the target sequence
-
-    .. attribute:: source_end
-
-        The last position in the source sequence that aligns with the target sequence.
     """
 
     def __init__(self, size):

@@ -1,11 +1,11 @@
 # coding: utf-8
 from __future__ import unicode_literals
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
-    name='component-lib',
-    version='0.1.0a1',
-    packages=['colib', 'colib.utils'],
+    name='colib',
+    version='0.1.0',
+    packages=find_packages(exclude=['*tests*']),
     url='',
     license='MIT',
     author='Lars Schöning',
@@ -14,8 +14,7 @@ setup(
     test_suite='nose.collector',
     install_requires=[
         'Flask-Presst>=0.2.2',
-        'biopython>=1.62',
-        'blinker>=1.3',
+        'biopython>=1.63'
     ],
     extras_require={
         'docs': ['Sphinx', 'sphinx-rtd-theme'],
