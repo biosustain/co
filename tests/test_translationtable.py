@@ -152,18 +152,24 @@ class TranslationTableTestCase(unittest.TestCase):
         self.assertEqual(6, self.tt.total_ungapped_size)
 
     def test_order_1(self):
+        self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], list(self.tt))
+
         self.tt.delete(5, 1)  # ABCDE  -GHIJ
         self.assertEqual(9, self.tt.target_size)
+        self.assertEqual([0, 1, 2, 3, 4, None, 5, 6, 7, 8], list(self.tt))
+
         self.tt.insert(5, 2)  # ABCDExx-GHIJ
         self.assertEqual(11, self.tt.target_size)
         self.assertEqual([0, 1, 2, 3, 4, None, 7, 8, 9, 10], list(self.tt))
 
     def test_order_2(self):
         self.assertEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], list(self.tt))
+
         self.tt.insert(5, 2)  # ABCDExxFGHIJ
-        self.assertEqual([0, 1, 2, 3, 4, 7, 8, 9, 10, 11], list(self.tt))
         self.assertEqual(self.tt.target_size, 12)
-        self.tt.delete(5, 1)  # ABCDExx-GHIJ
+        self.assertEqual([0, 1, 2, 3, 4, 7, 8, 9, 10, 11], list(self.tt))
+
+        self.tt.delete(5, 1, strict=False)  # ABCDExx-GHIJ
         self.assertEqual(self.tt.target_size, 11)
         self.assertEqual([0, 1, 2, 3, 4, None, 7, 8, 9, 10], list(self.tt))
 

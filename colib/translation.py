@@ -178,11 +178,7 @@ class TranslationTable(object):
             source_gap_end = gap_start + ds
             target_gap_end = gap_start + dt  # NOTE might be ds
 
-            # print 'chain:', (ungapped_size, ds, dt)
-            # print (ungapped_size, ds, dt, target_offset, position, offset)
-            # print position < offset + ungapped_size, position < offset + ungapped_size + dt
             if position < gap_start:  # target position is in this ungapped block
-                # FIXME the <= is wrong, but necessary for some tests to work. The worst kind of wrong.
                 # logging.debug('{}: {} {} {} {}'.format(
                 #     position,
                 #     ungapped_size,
@@ -315,16 +311,15 @@ class MutableTranslationTable(TranslationTable):
             offset = self.source_start
 
             for i, (ungapped_size, ds, dt) in enumerate(self.chain):
-                print(i, position, ungapped_size, ds, dt)
-
                 gap_start = offset + ungapped_size
                 source_gap_end = gap_start + dt  #- ds# NOTE might be ds
 
                 logging.debug(
-                    'source_gap_end={}; ({}) gap_start={}, dt={}, ds={}'.format(source_gap_end, position, gap_start, dt,
+                    'source_gap_end={}; ({}) gap_start={}, dt={}, ds={}'.format(source_gap_end,
+                                                                                position,
+                                                                                gap_start,
+                                                                                dt,
                                                                                 ds))
-                #if position == offset:
-                #    raise NotImplementedError()
 
                 if offset < position < gap_start:
                     gap_offset = position - offset
@@ -333,6 +328,7 @@ class MutableTranslationTable(TranslationTable):
                     logging.debug('ungapped_remainder={}'.format(ungapped_remainder))
 
                     if ungapped_remainder < 0:
+                        # TODO merge with position == gap_start case here.
                         raise OverlapError('Deletion at {} '
                                            'extends to following gap at {}'.format(position, position + target_gap))
 
@@ -340,11 +336,10 @@ class MutableTranslationTable(TranslationTable):
                         self.chain[i] = (gap_offset, ds + source_gap, dt + target_gap)
                         break
 
-                    logging.warn(gap_offset)
                     self.chain.insert(i, (gap_offset, source_gap, target_gap))
                     self.chain[i + 1] = (ungapped_remainder, ds, dt)
                     break
-                if position == gap_start:
+                elif position == gap_start:
                     # if ds and source_gap or dt and target_gap:
                     #     logging.debug(self.__dict__)
                     #     # allow for max one insertion and one deletion per coordinate:
@@ -360,10 +355,33 @@ class MutableTranslationTable(TranslationTable):
                         raise OverlapError('Cannot insert gap at {}: '
                                            'Target sequence gap already present at this position.'.format(position))
 
+                    if strict and target_gap:
+                        raise OverlapError('Strict gap insert at {} overlaps existing gap start.'.format(position))
+
+                    # TODO change this code to an iterative version to support deletions that cross multiple gaps:
+                    try:
+                        next_ungapped_size, next_ds, next_dt = self.chain[i + 1]
+                        next_ungapped_remainder = next_ungapped_size - target_gap
+
+                        if next_ungapped_remainder == 0:
+                            self.chain.pop(i + 1)
+                            ds += next_ds
+                            dt += next_dt
+                        elif next_ungapped_remainder < 0:
+                            raise OverlapError('Deletion at {} '
+                                               'extends through following gap at {}'.format(position,
+                                                                                            position + target_gap))
+                            # TODO make recursive here instead
+                        else:
+                            self.chain[i + 1] = (next_ungapped_size - target_gap, next_ds, next_dt)
+
+                    except IndexError:
+                        raise
+
                     self.chain[i] = (ungapped_size, ds + source_gap, dt + target_gap)
+
                     break
                 elif position < source_gap_end:
-                    logging.debug(self.__dict__)
                     logging.debug('position={}, {} {}; offset={}'.format(position, source_gap, target_gap, offset))
                     logging.debug(
                         'source_gap_end={}; gap_start={}, dt={}, ds={}'.format(source_gap_end, gap_start, dt, ds))
@@ -371,7 +389,6 @@ class MutableTranslationTable(TranslationTable):
                                        'Gap already present from {} to {}'.format(position,
                                                                                   gap_start,
                                                                                   source_gap_end))
-
                 elif position == source_gap_end:
                     next_ungapped_size, next_ds, next_dt = self.chain[i + 1]
                     ungapped_remainder = next_ungapped_size - target_gap

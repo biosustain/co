@@ -128,11 +128,17 @@ FORWARD_STRAND, REVERSE_STRAND = 1, -1
 
 
 class Feature(BaseInterval):
-    def __init__(self, component, position, size, strand=None, type=None, **attributes):
+    def __init__(self, component, position, size, strand=None, type=None, source=None, **attributes):
         self._component = component
         self._position = int(position)
         self._size = int(size)
         self._type = type
+
+        if 'source' in attributes:
+            source = attributes['source']
+            if not isinstance(source, Source):
+                attributes['source'] = Source(source)
+
         self.strand = strand
         self._attributes = attributes
 

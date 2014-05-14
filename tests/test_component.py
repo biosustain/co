@@ -8,6 +8,8 @@ from colib.mutations import SNP, DEL, INS, Mutation, SUB
 
 
 class ComponentTestCase(unittest.TestCase):
+
+
     def test_mutate_1(self):
         component = Component('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         # .   .     .    .    .      .
@@ -48,9 +50,9 @@ class ComponentTestCase(unittest.TestCase):
         combined = Component.from_components(a, f, i)
 
         self.assertEqual('ABCDEFGHIJKLMNOPQ', str(combined))
-        self.assertEqual([Feature(combined, 0, 5, source=Source(a, broken=False)),
-                          Feature(combined, 5, 3, source=Source(f, broken=False)),
-                          Feature(combined, 8, 9, source=Source(i, broken=False))], list(combined.features))
+        self.assertEqual([Feature(combined, 0, 5, source=a),
+                          Feature(combined, 5, 3, source=f),
+                          Feature(combined, 8, 9, source=i)], list(combined.features))
 
     def test_from_components_copy(self):
         co_1 = Component('AAATTTAAA')
@@ -63,6 +65,10 @@ class ComponentTestCase(unittest.TestCase):
         self.assertEqual('AAATTTAAAGGGGGGGGGG', str(combined))
         self.assertEqual([Feature(combined, 3, 3, type='repeat', name='ts'),
                           Feature(combined, 9, 10, type='repeat', name='gs')], list(combined.features))
+
+    @unittest.SkipTest
+    def test_mutate_break_source(self):
+        pass
 
     @unittest.SkipTest
     def test_inherits(self):
