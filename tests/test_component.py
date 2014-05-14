@@ -9,21 +9,20 @@ from colib.mutations import SNP, DEL, INS, Mutation, SUB
 
 class ComponentTestCase(unittest.TestCase):
 
-
     def test_mutate_1(self):
         component = Component('ABCDEFGHIJKLMNOPQRSTUVWXYZ')
         # .   .     .    .    .      .
-        mutated = component.mutate(  # 0123456 78901234567890  12345
-                                     [SNP(3, 'd'),  # ABCdEFG HIJKLMNOPQRSTU  VWXYZ
-                                      DEL(1),  # A-CdEFG HIJKLMNOPQRSTU  VWXYZ
-                                      INS(21, 'xx'),  # A-CdEFG HIJKLMNOPQRSTUxxVWXYZ
-                                      Mutation(10, 9, 'oops'),  # A-CdEFG HIJoops-----TUxxVWXYZ
-                                      SUB(4, 'ef'),  # A-CdefG HIJoops-----TUxxVWXYZ
-                                      Mutation(6, 1, 'Gg')],  # A-CdefGgHIJoops-----TUxxVWXYZ
-                                     strict=False)  # 0 1234567890123     457890123
-        # .    .    .         .   .
+        mutated = component.mutate(                             # 01234567 8901234567890  12345
+                                     [SNP(3, 'd'),              # ABCdEFGH IJKLMNOPQRSTU  VWXYZ
+                                      DEL(1),                   # A-CdEFGH IJKLMNOPQRSTU  VWXYZ
+                                      INS(21, 'xx'),            # A-CdEFGH IJKLMNOPQRSTUxxVWXYZ
+                                      Mutation(10, 9, 'oops'),  # A-CdEFGH IJoops-----TUxxVWXYZ
+                                      SUB(4, 'ef'),             # A-CdefGH IJoops-----TUxxVWXYZ
+                                     Mutation(7, 1, 'Hh')],     # A-CdefGHhIJoops-----TUxxVWXYZ
+                                     strict=False)              # 0 1234567890123     457890123
+                                                                # .    .    .         .   .
 
-        self.assertEqual('ACdefGgHIJoopsTUxxVWXYZ', six.text_type(mutated.sequence))
+        self.assertEqual('ACdefGHhIJoopsTUxxVWXYZ', str(mutated))
 
     def test_mutate_replace(self):
         self.assertEqual('01ttf2345', str(Component('012345').mutate([Mutation(1, 1, '1ttf')])))
