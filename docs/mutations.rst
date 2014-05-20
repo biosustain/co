@@ -2,6 +2,6 @@ Mutation types
 ==============
 
 
-.. automodule:: mutations
+.. automodule:: mutation
    :members:
    :undoc-members:

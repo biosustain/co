@@ -5,8 +5,8 @@ from Bio import SeqIO
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 from Bio.SeqRecord import SeqRecord
 
-from colib.components import Component
-from colib.features import Feature
+from colib.component import Component
+from colib.feature import Feature
 from colib.identifiers import UniqueIdentifier
 
 

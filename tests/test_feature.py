@@ -3,7 +3,7 @@ import unittest
 from Bio.SeqFeature import FeatureLocation
 
 from colib import Component, Feature
-from colib.mutations import DEL, INS
+from colib.mutation import DEL, INS
 
 
 class FeatureTestCase(unittest.TestCase):

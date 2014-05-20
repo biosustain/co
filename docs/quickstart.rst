@@ -3,6 +3,9 @@
 Quickstart
 ==========
 
+Simple mutation
+---------------
+
 .. module:: colib
 
 .. without features
@@ -27,11 +30,16 @@ To illustrate what `colib` is designed for, let's begin with a hello world examp
 - features
 
 
+.. module:: mutation
 
+Mutation types that inherit from :class:`Mutation` are :class:`INS`,  :class:`DEL`, :class:`SUB` for substitutions, and
+:class:`SNP` for SNPs.
+
+.. module:: colib
 .. features
 
-Features & mutation
--------------------
+Features & feature inheritance
+------------------------------
 
 .. code-block:: python
 
@@ -85,7 +93,6 @@ the new feature is added.
 - Feature locations are indexed using :class:`interval.IntervalTree`, currently implemented as a BST.
 
 
-
 Feature diffs
 ^^^^^^^^^^^^^
 
@@ -108,6 +115,12 @@ Internally, these values are stored in ``Component.features.added`` and ``Compon
     Currently :meth:`Component.fdiff` is only implemented for components that directly inherit from one another.
 
 
+Feature search
+^^^^^^^^^^^^^^
+
+- find method
+- overlap method
+
 Combining components
 --------------------
 
@@ -126,3 +139,13 @@ the keyword-only argument ``copy_features=True`` is set.
     >>> c.features
     ComponentFeatureSet([Feature(FeatureLocation(ExactPosition(2), ExactPosition(5)), id='lib')])
 
+
+Strain inheritance
+------------------
+
+In addition to DNA components, `colib` can track changes in haploid microbial organisms. :class:`HaploidOrganism`
+can track added, changed, or deleted DNA components -- such as chromosomes or plasmids -- and aggregate features
+contained in the strains.
+
+- example
+- find features in strain

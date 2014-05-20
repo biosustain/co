@@ -7,8 +7,8 @@ import six
 
 from colib import Component, Feature
 from colib.converters import GenbankConverter, JSONConverter
-from colib.mutations import SNP, Mutation
-from colib.organisms import HaploidOrganism
+from colib.mutation import SNP, Mutation
+from colib.organism import HaploidOrganism
 
 
 class HaploidOrganismTestCase(unittest.TestCase):

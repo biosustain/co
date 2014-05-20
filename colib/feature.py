@@ -331,29 +331,6 @@ FORWARD_STRAND, REVERSE_STRAND = 1, -1
 #         return '{}({})'.format(self.__class__.__name__, args)
 #
 
-class Annotation(object):
-    """
-    An annotation is different from a feature in that it is not bound to a particular `Component` and sequence.
-
-    This means that annotations can be more easily applied to different components without being tightly coupled.
-
-    Annotations are very simple objects almost like `Range` objects that are meant to be used by tools outside the
-    library to attach additional information to components and being able to translate_to this information to mutated
-    versions without having to deal with all the complexities of mutations.
-
-    """
-
-    def __init__(self, position, size, **attributes):
-        self.position = position
-        self.size = size
-        self._attributes = attributes
-
-    def __getattr__(self, item):
-        return self._attributes[item]
-
-    def translate(self, from_component, to_component):
-        raise NotImplementedError()
-
 
 class Source(object):
     def __init__(self, component, broken=False):

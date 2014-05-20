@@ -6,7 +6,7 @@ from Bio.SeqFeature import FeatureLocation, SeqFeature
 import six
 
 from colib import Component, Feature, Source
-from colib.mutations import SNP, DEL, INS, Mutation, SUB
+from colib.mutation import SNP, DEL, INS, Mutation, SUB
 
 
 class ComponentTestCase(unittest.TestCase):

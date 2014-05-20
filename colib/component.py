@@ -10,7 +10,7 @@ from Bio.SeqRecord import SeqRecord
 import six
 
 from colib.difference import Diff
-from colib.features import Feature, ComponentFeatureSet, Source
+from colib.feature import Feature, ComponentFeatureSet, Source
 from colib.translation import OverlapError, MutableTranslationTable
 
 
