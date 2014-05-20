@@ -4,24 +4,24 @@ TODO consider namedtuple.
 
 
 class UniqueIdentifier(object):
-    def __init__(self, type, identifier):  # TODO alt. names, databases
+    def __init__(self, type, reference):  # TODO alt. names, databases
         self.type = type
-        self.identifier = identifier
+        self.reference = reference
 
     def as_version(self, version_number):
-        return Version(self.type, self.identifier, version_number)
+        return Version(self.type, self.reference, version_number)
 
     def __repr__(self):
-        return '{}:{}'.format(self.type, self.identifier)
+        return '{}:{}'.format(self.type, self.reference)
 
 
 class Version(UniqueIdentifier):
-    def __init__(self, type, identifier, version_number):  # TODO alt. names, databases
-        super(Version, self).__init__(type, identifier)
+    def __init__(self, type, reference, version_number):  # TODO alt. names, databases
+        super(Version, self).__init__(type, reference)
         self.version_number = version_number
 
     def __repr__(self):
-        return '{}:{}.{}'.format(self.type, self.identifier, self.version_number)
+        return '{}:{}.{}'.format(self.type, self.reference, self.version_number)
 
 
 class DatabaseXRef(UniqueIdentifier):

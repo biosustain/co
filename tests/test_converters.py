@@ -2,6 +2,8 @@ from collections import Counter
 import unittest
 
 from Bio.Alphabet import DNAAlphabet
+from Bio.Seq import Seq
+from Bio.SeqFeature import FeatureLocation
 
 from colib import Component
 from colib.converters import GenbankConverter
@@ -15,7 +17,7 @@ class GenbankConverterTestCase(unittest.TestCase):
 
         self.assertEqual(4196, len(component))
         self.assertEqual(19, len(component.features))
-        self.assertEqual('TTCTCATGTT', str(component[0:10]))
+        self.assertEqual('TTCTCATGTT', str(component.seq[0:10]))
 
         self.assertEqual(
             Counter(
@@ -33,17 +35,20 @@ class GenbankConverterTestCase(unittest.TestCase):
         feature_2 = list(component.features)[2]  # minus strand
         feature_15 = list(component.features)[15]  # minus strand
 
-        self.assertEqual('TTGACA', str(feature_0.sequence))
-        self.assertEqual('TAAACT', str(feature_2.sequence))
+        self.assertEqual('TTGACA', str(feature_0.seq))
+        self.assertEqual('TAAACT', str(feature_2.seq))
         self.assertEqual('ATGAGTATTCAACATTTCCGTGTCGCCC'
                          'TTATTCCCTTTTTTGCGGCATTTTGCCT'
-                         'TCCTGTTTTTGCT', str(feature_15.sequence))
+                         'TCCTGTTTTTGCT', str(feature_15.seq))
 
     def test_export(self):
-        component = Component('TATAGAGACACA', alphabet=DNAAlphabet(), meta={'accession': 'MB1'})
-        component.features.add(3, 4, type='minus_10_signal')
-        component.features.add(7, 2, name='GA', type='CDS', qualifiers={'locus_id': 'b0001'})
+        component = Component(Seq('TATAGAGACACA', alphabet=DNAAlphabet()),
+                              id='Magic_Brick',
+                              annotations={'accession': 'MB1'})
+
+        component.features.add(FeatureLocation(3, 7), type='minus_10_signal')
+        component.features.add(FeatureLocation(7, 9), id='GA', type='CDS', qualifiers={'locus_id': 'b0001'})
 
         # GenbankConverter.to_file(component, 'fixtures/MB_1.gb', 'Magic_Brick')
-        record = GenbankConverter.to_genbank_record(component, 'Magic_Brick')
+        record = GenbankConverter.to_seq_record(component)
         self.assertEqual(open('fixtures/MB_1.gb').read(), record.format('genbank'))

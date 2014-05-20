@@ -1,6 +1,8 @@
 import unittest
 
 from Bio.Alphabet import Alphabet
+from Bio.Seq import Seq
+from Bio.SeqFeature import FeatureLocation
 import six
 
 from colib import Component, Feature
@@ -12,13 +14,13 @@ from colib.organisms import HaploidOrganism
 class HaploidOrganismTestCase(unittest.TestCase):
     def test_list_features(self):
         c1 = Component('A' * 10)
-        c1.features.add(1, 10, type='repeat')
+        c1.features.add(FeatureLocation(1, 10), type='repeat')
 
         c2 = Component('T' * 10)
-        c2.features.add(1, 10, type='repeat')
+        c2.features.add(FeatureLocation(1, 10), type='repeat')
 
-        self.assertEqual([Feature(c1, 1, 10, type='repeat')], list(c1.features))
-        self.assertEqual([Feature(c2, 1, 10, type="repeat")], list(c2.features))
+        self.assertEqual([Feature(c1, FeatureLocation(1, 10), type='repeat')], list(c1.features))
+        self.assertEqual([Feature(c2, FeatureLocation(1, 10), type="repeat")], list(c2.features))
 
         strain = HaploidOrganism(display_id='strain')
         strain.set('a', c1)
@@ -26,17 +28,17 @@ class HaploidOrganismTestCase(unittest.TestCase):
         strain.set('c', c2)
 
         self.assertEqual(2, len(strain.features))
-        self.assertEqual({Feature(Component('AAAAAAAAAA', Alphabet()), 1, 10, type="repeat"),
-                          Feature(Component('TTTTTTTTTT', Alphabet()), 1, 10, type="repeat")}, set(strain.features))
+        self.assertEqual({Feature(Component('AAAAAAAAAA'), FeatureLocation(1, 10), type="repeat"),
+                          Feature(Component('TTTTTTTTTT'), FeatureLocation(1, 10), type="repeat")}, set(strain.features))
 
     def test_mutate_strain(self):
         strain = HaploidOrganism(display_id='strain-1')
 
         genome = Component('A' * 25 + 'C' * 25 + 'G' * 25 + 'T' * 25)
-        genome.features.add(0, 25, type='a')
-        genome.features.add(25, 25, type='c')
-        feature_3 = genome.features.add(50, 25, type='g')
-        feature_4 = genome.features.add(75, 25, type='t')  # FIXME 75 should be possible, no?
+        genome.features.add(FeatureLocation(0, 25), type='a')
+        genome.features.add(FeatureLocation(25, 49), type='c')
+        feature_3 = genome.features.add(FeatureLocation(50, 74), type='g')
+        feature_4 = genome.features.add(FeatureLocation(75, 99), type='t')  # FIXME 75 should be possible, no?
 
         strain.set('genome', genome)
 
@@ -46,7 +48,7 @@ class HaploidOrganismTestCase(unittest.TestCase):
             Mutation(31, 3, ''),
             Mutation(40, new_sequence='GATGA'),
             Mutation(feature_3.start, end=feature_3.end - 5),
-            Mutation(feature_4.start, end=feature_4.end, new_sequence=Component('GAGAGA'))
+            Mutation(feature_4.start, end=feature_4.end, new_sequence=Seq('GAGAGA'))
         ]
 
         new_genome = strain.components['genome'].mutate(mutations)
@@ -58,14 +60,21 @@ class HaploidOrganismTestCase(unittest.TestCase):
         self.assertEqual(False, feature_4 in new_strain.features)
 
         self.assertEqual(1, len(new_strain.diff(strain)))  # 'genome' changed
-        self.assertEqual('AAAAAAATAAAAAAAAAAAAAAAAACCCCCGCCCCCCGATGACCCCCCCCCCGGGGGGAGAGA', str(new_genome))
+        self.assertEqual('AAAAAAATAAAAAAAAAAAAAAAAACCCCCGCCCCCCGATGACCCCCCCCCCGGGGGGAGAGA', str(new_genome.seq))
 
         genome_fdiff = new_strain.components['genome'].fdiff(strain.components['genome'])
         self.assertEqual(set(genome.features), set(genome_fdiff.removed))  # all features removed/changed
+
+        print(set(genome_fdiff.added))
+
         self.assertEqual({
-                             Feature(new_genome, 0, 25, type="a"),
-                             Feature(new_genome, 52, 5, type="g"),
-                             Feature(new_genome, 25, 25, type="c")}, set(genome_fdiff.added))
+                             Feature(new_genome, FeatureLocation(0, 25), type="a"),
+                             Feature(new_genome, FeatureLocation(52, 56), type="g"),
+                             Feature(new_genome, FeatureLocation(25, 50), type="c")}, set(genome_fdiff.added))
+
+        self.assertEqual({('a', 'AAAAAAATAAAAAAAAAAAAAAAAA'),
+                          ('c', 'CCCCCGCCCCCCGATGACCCCCCCC'),
+                          ('g', 'GGGG')}, set((f.type, str(f.seq)) for f in genome_fdiff.added))
 
     @unittest.SkipTest
     def test_yeast(self):

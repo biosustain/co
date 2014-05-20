@@ -108,34 +108,22 @@ GENBANK_SINGLE_QUALIFIERS = (
 
 
 class Converter(object):
-    @classmethod
-    def from_file(cls, file):
-        raise NotImplementedError()
 
     @classmethod
-    def to_file(cls, component, file, record_id):
-        raise NotImplementedError()
-
-
-class GenbankConverter(Converter):
-    @classmethod
-    def from_file(cls, file):
-        record = SeqIO.read(file, 'genbank')
-
-        record_meta = {name: record.annotations.get(name) for name in GENBANK_META_ANNOTATIONS}
-        component = Component(record.seq, meta=record_meta)
-
-        # TODO identifiers such as accession (with version) and gi number.
+    def from_seq_record(cls, record):
+        component = Component(
+            seq=record.seq,
+            parent=None,
+            id=record.id,
+            name=record.name,
+            description=record.description,
+            annotations=record.annotations)
 
         for feature in record.features:
             if feature.type == 'source':
                 continue
 
-            feature_name = None
             feature_qualifiers = feature.qualifiers
-
-            if 'gene' in feature.qualifiers:
-                feature_name = feature.qualifiers['gene'][0]
 
             # clean up synonyms for easier indexing:
             if 'gene_synonym' in feature.qualifiers:
@@ -147,34 +135,61 @@ class GenbankConverter(Converter):
                     feature_qualifiers[name] = feature.qualifiers[name][0]
 
             component.features \
-                .add(feature.location.start,
-                     size=len(feature),
-                     strand=feature.location.strand,
+                .add(feature.location,
                      type=GENBANK_TYPE_SO_TERM_MAP.get(feature.type.replace("'", '_prime_')),
-                     name=feature_name,
-                     qualifiers=feature_qualifiers)
-
+                     strand=feature.strand,
+                     id=feature.id,
+                     qualifiers=feature_qualifiers,
+                     ref=feature.ref,
+                     ref_db=feature.ref_db)
         return component
 
     @classmethod
-    def to_file(cls, component, file, record_id):
-        record = cls.to_genbank_record(component, record_id)
+    def to_seq_record(cls, component):
+        def convert_features(features):
+            for feature in features:
+                yield SeqFeature(feature.location,
+                                 type=SO_TERM_GENBANK_TYPE_MAP.get(feature.type),
+                                 strand=feature.strand,
+                                 id=feature.id,
+                                 qualifiers=feature.qualifiers,
+                                 ref=feature.ref,
+                                 ref_db=feature.ref_db)
+
+        return SeqRecord(component.seq,
+                         features=list(convert_features(component.features)),
+                         id=component.id or "<unknown id>",
+                         name=component.name or "<unknown name>",
+                         description=component.description or "<unknown description>",
+                         annotations=component.annotations)
+
+    @classmethod
+    def from_file(cls, file):
+        raise NotImplementedError()
+
+    @classmethod
+    def to_file(cls, component, file):
+        raise NotImplementedError()
+
+
+class GenbankConverter(Converter):
+
+    @classmethod
+    def from_file(cls, file):
+        record = SeqIO.read(file, 'genbank')
+        component = Converter.from_seq_record(record)
+        return component
+
+    @classmethod
+    def to_file(cls, component, file):
+        record = SeqRecord(component.seq,
+                           id=component.id,
+                           name=component.name,
+                           features=list(component.features),
+                           description=component.description,
+                           annotations=component.annotations)
+
         return SeqIO.write(record, file, 'genbank')
-
-    @staticmethod
-    def to_genbank_record(component, record_id):
-        if len(component) == 0:
-            raise RuntimeError('Can only export records with an explicit sequence.')
-
-        record = SeqRecord(component, id=record_id)
-        record.annotations = component.meta
-
-        for feature in component.features:
-            location = FeatureLocation(feature.start, feature.end + 1, strand=feature.strand)
-            type = SO_TERM_GENBANK_TYPE_MAP.get(feature.type) or feature.type
-            qualifiers = feature.qualifiers
-            record.features.append(SeqFeature(location, type=type.replace('_prime_', "'"), qualifiers=qualifiers))
-        return record
 
 
 class FASTAConverter(Converter):
@@ -207,7 +222,7 @@ class _ComponentEncoder(json.JSONEncoder):
                 'features': (tuple(obj.features.added), tuple(obj.features.removed))
             }
         elif isinstance(obj, UniqueIdentifier):
-            return [obj.type, obj.identifier]
+            return [obj.type, obj.reference]
 
 
 class JSONConverter(Converter):

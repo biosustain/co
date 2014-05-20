@@ -1,32 +1,32 @@
 # coding: utf-8
 import unittest
+from Bio.SeqFeature import FeatureLocation
 
-from colib import Component
+from colib import Component, Feature
 from colib.mutations import DEL, INS
 
 
 class FeatureTestCase(unittest.TestCase):
     def test_add_features(self):
         component = Component('GAGAGAGATATAGAGAGA')
-        component.features.add(8, 4, name='tata', qualifiers={'a': 1})
-        component.features.add(17, 1, name='end')
-        component.features.add(0, 1, name='start')
+        component.features.add(FeatureLocation(8, 12), qualifiers={'name': 'tata'})
+        component.features.add(FeatureLocation(17, 18), qualifiers={'name': 'end'})
+        component.features.add(FeatureLocation(0, 1), qualifiers={'name': 'start'})
 
-        self.assertEqual(['start', 'tata', 'end'], [f.name for f in component.features])
+        self.assertEqual(['start', 'tata', 'end'], [f.qualifiers.get('name') for f in component.features])
 
     def test_inherit_features(self):
         component = Component('ABCDEFGHIerrorJKLMNOPQRSTUVXYZ')
-        component.features.add(0, 3, name='abc')  # fine
-        component.features.add(9, 5, name='error')  # fine
-        component.features.add(6, 6, name='GHI..err')
-        component.features.add(11, 6, name='ror..JKL')
-        component.features.add(8, 7, name='I..error..J')  # fine
-        component.features.add(29, 1, name='end')  # fine
+        component.features.add(FeatureLocation(0, 3), id='abc')  # fine
+        component.features.add(FeatureLocation(9, 14), id='error')  # fine
+        component.features.add(FeatureLocation(6, 12), id='GHI..err')
+        component.features.add(FeatureLocation(11, 17), id='ror..JKL')
+        component.features.add(FeatureLocation(8, 15), id='I..error..J')  # fine
+        component.features.add(FeatureLocation(29, 30), id='end')  # fine
 
         mutated = component.mutate([DEL(9, 5)])
 
-        self.assertEqual({'JKL', 'Z', 'ABC', 'GHI', 'IJ'}, set(str(f.sequence) for f in mutated.features))
-
+        self.assertEqual({'JKL', 'Z', 'ABC', 'GHI', 'IJ'}, set(str(f.seq) for f in mutated.features))
         # TODO insert mutation (need to test mutation.size = 0)
         # TODO snp mutation (need to test link breaking).
 
@@ -35,8 +35,8 @@ class FeatureTestCase(unittest.TestCase):
         In non-strict mode, potentially ambiguous mutations are allowed where the order in which
         the order in which the mutations are applied is significant.
         """
-        component = Component('12345')
-        component.features.add(2, 2, name='34')
+        component = Component('12345', feature_class=Feature)
+        component.features.add(FeatureLocation(2, 4), type='34')
 
         #   |████|      |████|
         # 12|3  4|5   12|3  4|5
@@ -44,12 +44,12 @@ class FeatureTestCase(unittest.TestCase):
         # 12|3xy|-5   12|3| xy5
 
         mutated_1 = component.mutate([DEL(3), INS(3, 'xy')], strict=False)
-        self.assertEqual('3', str(list(mutated_1.features)[0].sequence))  # 3xy would also be acceptable.
-        self.assertEqual('123xy5', str(mutated_1))
+        self.assertEqual('3', str(list(mutated_1.features)[0].seq))  # 3xy would also be acceptable.
+        self.assertEqual('123xy5', str(mutated_1.seq))
 
         mutated_2 = component.mutate([INS(3, 'xy'), DEL(3)], strict=False)
-        self.assertEqual('3xy', str(list(mutated_2.features)[0].sequence))
-        self.assertEqual('123xy5', str(mutated_2))
+        self.assertEqual('3xy', str(list(mutated_2.features)[0].seq))
+        self.assertEqual('123xy5', str(mutated_2.seq))
 
     def test_inherit_features_removed(self):
         pass

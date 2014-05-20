@@ -9,7 +9,7 @@ __all__ = (
     'Source',
     'ComponentFeatureSet',
     'FORWARD_STRAND',
-    'REVERSE_STRAND'
+    'REVERSE_STRAND',
     'TranslationTable',
     'MutableTranslationTable',
 )

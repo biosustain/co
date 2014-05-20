@@ -1,5 +1,6 @@
 from itertools import chain, repeat
 import logging
+from Bio.SeqFeature import CompoundLocation, FeatureLocation
 
 
 class OverlapError(Exception):
@@ -79,6 +80,17 @@ class TranslationTable(object):
         tti.target_start, tti.target_end = self.source_start, self.source_end
         tti.chain = [(ungapped_size, dt, ds) for ungapped_size, ds, dt in self.chain]
         return tti
+
+    def translate_location(self, location):
+        if isinstance(location, CompoundLocation):
+            translated_parts = (self.translate_location(p) for p in location.parts)
+            return CompoundLocation(translated_parts, operator=location.operator)
+
+        if not isinstance(location, FeatureLocation):
+            raise TypeError("Only FeatureLocation or CompoundLocation"
+                            " are supported but {} was given".format(location.__class__))
+
+        return FeatureLocation()
 
     def le(self, position):
         """
@@ -193,6 +205,8 @@ class TranslationTable(object):
         :returns: The new coordinate as an `int`, if it exists; `None` otherwise.
         :raises IndexError: If the coordinate does not exist in the original system
         """
+        # TODO support slices (and optimize for them)
+
         if not 0 <= position < self.source_size:
             raise IndexError()
 

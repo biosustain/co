@@ -1,5 +1,7 @@
 import unittest
 from Bio.Alphabet import Alphabet
+from Bio.Seq import Seq
+from Bio.SeqFeature import FeatureLocation, SeqFeature
 
 import six
 
@@ -22,48 +24,50 @@ class ComponentTestCase(unittest.TestCase):
                                      strict=False)              # 0 1234567890123     457890123
                                                                 # .    .    .         .   .
 
-        self.assertEqual('ACdefGHhIJoopsTUxxVWXYZ', str(mutated))
+        self.assertEqual('ACdefGHhIJoopsTUxxVWXYZ', str(mutated.seq))
 
     def test_mutate_replace(self):
-        self.assertEqual('01ttf2345', str(Component('012345').mutate([Mutation(1, 1, '1ttf')])))
-        self.assertEqual('0ott45', str(Component('012345').mutate([Mutation(1, 3, 'ott')])))
-        self.assertEqual('z12345', str(Component('012345').mutate([SNP(0, 'z')])))
+        self.assertEqual('01ttf2345', str(Component('012345').mutate([Mutation(1, 1, '1ttf')]).seq))
+        self.assertEqual('0ott45', str(Component('012345').mutate([Mutation(1, 3, 'ott')]).seq))
+        self.assertEqual('z12345', str(Component('012345').mutate([SNP(0, 'z')]).seq))
 
     def test_mutate_delete(self):
-        self.assertEqual('01234', str(Component('012345').mutate([DEL(5)])))
-        self.assertEqual('01235', str(Component('012345').mutate([DEL(4)])))
-        self.assertEqual('0123', str(Component('012345').mutate([DEL(4, 2)])))
-        self.assertEqual('2345', str(Component('012345').mutate([DEL(0, 2)])))
+        self.assertEqual('01234', str(Component('012345').mutate([DEL(5)]).seq))
+        self.assertEqual('01235', str(Component('012345').mutate([DEL(4)]).seq))
+        self.assertEqual('0123', str(Component('012345').mutate([DEL(4, 2)]).seq))
+        self.assertEqual('2345', str(Component('012345').mutate([DEL(0, 2)]).seq))
 
     def test_mutate_insert(self):
-        self.assertEqual('99012345', str(Component('012345').mutate([INS(0, '99')])))
-        self.assertEqual('09912345', str(Component('012345').mutate([INS(1, '99')])))
-        self.assertEqual('9912345', str(Component('012345').mutate([INS(0, '99', replace=True)])))
+        self.assertEqual('99012345', str(Component('012345').mutate([INS(0, '99')]).seq))
+        self.assertEqual('09912345', str(Component('012345').mutate([INS(1, '99')]).seq))
+        self.assertEqual('9912345', str(Component('012345').mutate([INS(0, '99', replace=True)]).seq))
         # FIXME self.assertEqual('01234599', six.text_type(Component('012345').mutate([INS(6, '99')]).sequence))
 
     def test_from_components_no_copy(self):
-        a = Component('ABCDE')
+        a = Component('ABCDE', id='a')
         f = Component('FGH')
-        i = Component('IJKLMNOPQ')
+        i = Component('IJKLMNOPQ', id='i')
 
-        combined = Component.from_components(a, f, i)
+        combined = Component.combine(a, f, i)
 
-        self.assertEqual('ABCDEFGHIJKLMNOPQ', str(combined))
-        self.assertEqual([Feature(combined, 0, 5, source=a),
-                          Feature(combined, 5, 3, source=f),
-                          Feature(combined, 8, 9, source=i)], list(combined.features))
+        print(list(combined.features))
+
+        self.assertEqual('ABCDEFGHIJKLMNOPQ', str(combined.seq))
+        self.assertEqual([Feature(a, FeatureLocation(0, 5), ref='a'),
+                          Feature(f, FeatureLocation(5, 8)),
+                          Feature(i, FeatureLocation(8, 17), ref='i')], list(combined.features))
 
     def test_from_components_copy(self):
-        co_1 = Component('AAATTTAAA')
-        co_1.features.add(3, 3, type='repeat', name='ts')
-        co_2 = Component('G' * 10)
-        co_2.features.add(0, 10, type='repeat', name='gs')
+        co_1 = Component(Seq('AAATTTAAA'))
+        co_1.features.add(FeatureLocation(3, 6), type='repeat', qualifiers={'name': 'ts'})
+        co_2 = Component(Seq('G' * 10))
+        co_2.features.add(FeatureLocation(0, 10), type='repeat', qualifiers={'name': 'gs'})
 
-        combined = Component.from_components(co_1, co_2, copy_features=True)
+        combined = Component.combine(co_1, co_2, copy_features=True)
 
-        self.assertEqual('AAATTTAAAGGGGGGGGGG', str(combined))
-        self.assertEqual([Feature(combined, 3, 3, type='repeat', name='ts'),
-                          Feature(combined, 9, 10, type='repeat', name='gs')], list(combined.features))
+        self.assertEqual('AAATTTAAAGGGGGGGGGG', str(combined.seq))
+        self.assertEqual([Feature(combined, FeatureLocation(3, 6), type='repeat', qualifiers={'name': 'ts'}),
+                          Feature(combined, FeatureLocation(9, 19), type='repeat', qualifiers={'name': 'gs'})], list(combined.features))
 
     @unittest.SkipTest
     def test_mutate_break_source(self):

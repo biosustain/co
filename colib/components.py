@@ -5,13 +5,16 @@ import logging
 from Bio import Alphabet
 from Bio.Seq import Seq
 import operator
+from Bio.SeqFeature import FeatureLocation, SeqFeature
+from Bio.SeqRecord import SeqRecord
+import six
 
 from colib.difference import Diff
 from colib.features import Feature, ComponentFeatureSet, Source
 from colib.translation import OverlapError, MutableTranslationTable
 
 
-class Component(Seq):
+class Component(object):
     """
     If the underlying library supports it, mutated `Component` objects can be stored as a set of the features
     that have been added or removed from the parent component. It is recommended that the library implements a
@@ -21,6 +24,15 @@ class Component(Seq):
     to by another component -- either by direct mutation or through a `_Feature`. A strategy for deleting components
     without destroying descendant objects may be necessary.
 
+    .. features::
+
+        A list of additional features (features in addition to those inherited from ``parent``)
+
+    .. removed_features::
+
+        A list of removed features (features present in ``parent`` or one of its parents, not present
+        in this component)
+
     .. attribute:: display_id
 
         A unique identifier for this component; preferably either :class:`str` or :class:`UniqueIdentifier`.
@@ -28,30 +40,68 @@ class Component(Seq):
     .. seealso:: :class:`Bio.Seq`
 
     """
-
     def __init__(self,
-                 sequence='',
-                 alphabet=Alphabet.generic_alphabet,
+                 seq,
                  parent=None,
-                 meta=None,
-                 display_id=None,
-                 feature_class=Feature):
+                 features=None,
+                 removed_features=None,
+                 feature_class=None,
+                 id=None,
+                 name=None,
+                 description=None,
+                 annotations=None):
 
-        if isinstance(sequence, Seq):
-            sequence = str(sequence)
+        self.id = id
+        self.name = name
+        self.description = description
 
-        super(Component, self).__init__(sequence, alphabet)
+        # From SeqRecord.py, Biopython
+        # Copyright 2000-2002 Andrew Dalke.
+        # Copyright 2002-2004 Brad Chapman.
+        # Copyright 2006-2010 by Peter Cock.
+        # All rights reserved.
+        # This code is part of the Biopython distribution and governed by its
+        # license.  Please see the LICENSE file that should have been included
+        # as part of this package.
+        # annotations about the whole sequence
+        if annotations is None:
+            annotations = {}
+        elif not isinstance(annotations, dict):
+            raise TypeError("annotations argument should be a dict")
+        self.annotations = annotations
 
-        # TODO support components without sequence.
+        if isinstance(seq, six.text_type):
+            seq = Seq(seq)
 
+        self._seq = seq
         self._parent = parent
-        self._sequence = sequence
         self._mutations = ()
-        self._mutations_tt = MutableTranslationTable.from_mutations(self, self._mutations)
-        self.display_id = display_id
-
+        self._mutations_tt = MutableTranslationTable.from_mutations(seq, self._mutations)
         self.features = ComponentFeatureSet(self, feature_class=feature_class)
-        self.meta = meta or {}
+
+        if features is not None:
+            for feature in features:
+                # FIXME need to translate SeqFeature to Feature!!!!!!!!!!
+                self.features.add(feature)
+
+    def __hash__(self):
+        return hash(str(self.seq))  # Biopython uses id() to generate Seq.__hash__ and to test for equality
+
+    def __len__(self):
+        return len(self.seq)
+
+    def __eq__(self, other):
+        return isinstance(other, (Component, SeqRecord)) and str(self.seq) == str(other.seq)
+
+    def __repr__(self):
+        return '{}({}, id={})'.format(self.__class__.__name__, repr(self.seq), repr(self.id))
+
+    def to_seq_record(self):
+        raise NotImplementedError()
+
+    @property
+    def seq(self):
+        return self._seq
 
     def tt(self, ancestor=None):
         if ancestor in (None, self._parent):
@@ -59,7 +109,7 @@ class Component(Seq):
         raise KeyError("Translation table from {} to {} cannot be accessed.".format(repr(self), repr(ancestor)))
 
     @classmethod
-    def from_components(cls, *components, **kwargs):
+    def combine(cls, *components, **kwargs):
         """
         Joins multiple components together, creating a source feature annotation for each.
 
@@ -77,24 +127,25 @@ class Component(Seq):
             will be used.
         """
         copy_features = kwargs.pop('copy_features', False)
-        alphabet = kwargs.pop('alphabet', None)
 
         if not components:
             return Component('')
 
-        sequence = reduce(operator.add, components)
-        combined = Component(sequence=sequence, alphabet=alphabet or components[0].alphabet)
+        seq = reduce(operator.add, (c.seq for c in components))
+        combined = Component(seq=seq)
 
         if copy_features:
             offset = 0
             for component in components:
                 for feature in component.features:
-                    combined.features.add(feature.move(offset + feature.position, component=combined))
+                    combined.features.add(feature._shift(offset)) #move(offset + feature.position, component=combined))
                 offset += len(component)
         else:
             offset = 0
             for component in components:
-                combined.features.add(offset, size=len(component), source=Source(component))
+                combined.features.add(location=FeatureLocation(offset, offset + len(component.seq)),
+                                      type='source',
+                                      ref=component.id)
                 offset += len(component)
 
         return combined
@@ -104,15 +155,32 @@ class Component(Seq):
     def parent(self):
         return self._parent
 
-    def clone(self):
-        """
-        Creates a copy of this :class:`Component`.
+    @staticmethod
+    def _translate_feature(feature, component, tt=None):
+        if tt is None:
+            tt = component.tt(feature.component)
 
-        The copy is linked to the same storage as the original, but is not saved automatically.
-        """
-        return Component(self._sequence, parent=self)
+        offset = tt[feature.location.start] - feature.location.start
 
-    def mutate(self, mutations, strict=True, clone=True):
+        # FIXME does not include ref and ref_db!
+        # TODO create a "broken reference" object and re-attach here
+        return feature._shift(offset, component)
+
+        # if not isinstance(feature, ComponentSeqFeature):
+        #     pass
+        #
+        #
+        # if component == self.component:
+        #     logging.warn('Translating {} from component {} to identical component'.format(self, self.component))
+        #     return self
+        # if using_tt is None:
+        #     using_tt = component.tt(self.component)
+        #
+        # # TODO handle CompoundLocation
+        #
+        # print(self._position, using_tt[self.position])
+
+    def mutate(self, mutations, strict=True):
         """
         Creates a copy of this :class:`Component` and applies all :param:`mutations`.
 
@@ -145,11 +213,12 @@ class Component(Seq):
         :returns: A mutated copy of the component (or a reference to the original component if `clone=False`)
         :raises OverlapException: if mutations find_overlapping
         """
-        component = self.clone() if clone else self
+        component = Component(seq=self._seq, parent=self)
         features = component.features
-        sequence = self.tomutable()
+        tt = component._mutations_tt
 
-        tt = MutableTranslationTable(len(self)) if clone else self._mutations_tt
+        sequence = self.seq.tomutable()
+
         changed_features = set()
 
         logging.debug('original features: {}'.format(list(self.features)))
@@ -157,7 +226,7 @@ class Component(Seq):
 
         # check that all mutations are in range:
         for mutation in mutations:
-            if mutation.end >= len(self):
+            if mutation.end >= len(self.seq):
                 raise IndexError('{} ends at {} but sequence length is {}'.format(mutation, mutation.end, len(self)))
 
         for mutation in mutations:
@@ -189,6 +258,8 @@ class Component(Seq):
             # TODO strict mode implementation that also fires on other overlaps.
 
             # TODO features.
+            logging.debug('{} {} {}'.format(mutation, mutation.position, mutation.end))
+
             affected_features = features.overlap(mutation.position, mutation.end)
 
             logging.debug('{} in {} to {} '.format(set(features), mutation.position, mutation.position + mutation.size))
@@ -209,7 +280,7 @@ class Component(Seq):
             for feature in affected_features | changed_features:
                 # logging.debug(list(range(len(self.sequence))))
                 # logging.debug(list(tt))
-                logging.info('{} with sequence "{}" affected by {}.'.format(feature, feature.sequence, mutation))
+                logging.info('{} with sequence "{}" affected by {}.'.format(feature, feature.seq, mutation))
 
                 if feature.end < mutation.start or feature.start > mutation.end:
                     continue
@@ -221,26 +292,26 @@ class Component(Seq):
 
                 # TODO find untranslated equivalents and replace when all is over.
                 if mutation.start > feature.start:
-                    if mutation.end < feature.end or mutation.size == 0:  # mutation properly contained in feature.
+                    if mutation.end < feature.end - 1 or mutation.size == 0:  # mutation properly contained in feature.
                         logging.debug('FMMF from {} to {}({})'.format(
                             feature.start,  # tt.ge(feature.start),
                             feature.end,  # tt.le(feature.end),
                             feature.end - mutation.size + mutation.new_size))
 
-                        changed_features.add(feature.move(feature.start,
-                                                          feature.size - mutation.size + mutation.new_size))
+                        changed_features.add(feature._move(feature.start,
+                                                           feature.end - mutation.size + mutation.new_size))
                     else:
                         logging.debug('FMFM from {} to {}'.format(
                             tt[feature.start],
                             tt[mutation.start - 1]))  # tt[mutation.start] ?
 
-                        changed_features.add(feature.move(feature.start, mutation.start - feature.start))
+                        changed_features.add(feature._move(feature.start, mutation.start))
                 else:  # mutation.start >= feature.start
 
-                    if mutation.end < feature.end:
+                    if mutation.end < feature.end - 1:
                         logging.debug('MFMF from {} to {}'.format(tt[mutation.end + 1], tt[feature.end]))
 
-                        changed_features.add(feature.move(mutation.end + 1, feature.end - mutation.end))
+                        changed_features.add(feature._move(mutation.end + 1, feature.end))
                     else:
                         pass  # feature removed and not replaced.
                         logging.debug('MFFM feature removed')
@@ -249,7 +320,7 @@ class Component(Seq):
                           translated_start,
                           sequence[translated_start],
                           mutation.start,
-                          self[mutation.start],
+                          self.seq[mutation.start],
                           mutation.size,
                           mutation.new_sequence)
 
@@ -276,7 +347,7 @@ class Component(Seq):
 
         logging.debug('mutated sequence: %s', str(sequence))
 
-        component._data = str(sequence.toseq())
+        component._seq = sequence.toseq()
         component._mutations = tuple(mutations)
         component._mutations_tt = tt
         component.features = features
@@ -285,17 +356,17 @@ class Component(Seq):
 
         for feature in changed_features:
             logging.debug('changed: %s', feature)
-            translated_feature = feature.translate_to(component, tt)
+            translated_feature = Component._translate_feature(feature, component, tt)
             features.add(translated_feature)
 
             logging.debug('translating %s: %s(%s) "%s" -> %s(%s) "%s"',
                           feature,
-                          feature.position,
-                          feature.size,
-                          feature.sequence,
-                          translated_feature.position,
-                          translated_feature.size,
-                          translated_feature.sequence)
+                          feature.start,
+                          feature.end,
+                          feature.seq,
+                          translated_feature.start,
+                          translated_feature.end,
+                          translated_feature.seq)
 
         return component
 
