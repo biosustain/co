@@ -43,6 +43,8 @@ class ComponentTestCase(unittest.TestCase):
         self.assertEqual('9912345', str(Component('012345').mutate([INS(0, '99', replace=True)]).seq))
         # FIXME self.assertEqual('01234599', six.text_type(Component('012345').mutate([INS(6, '99')]).sequence))
 
+    maxDiff = None
+
     def test_from_components_no_copy(self):
         a = Component('ABCDE', id='a')
         f = Component('FGH')
@@ -53,9 +55,9 @@ class ComponentTestCase(unittest.TestCase):
         print(list(combined.features))
 
         self.assertEqual('ABCDEFGHIJKLMNOPQ', str(combined.seq))
-        self.assertEqual([Feature(a, FeatureLocation(0, 5), ref='a'),
-                          Feature(f, FeatureLocation(5, 8)),
-                          Feature(i, FeatureLocation(8, 17), ref='i')], list(combined.features))
+        self.assertEqual([Feature(a, FeatureLocation(0, 5), type='source', ref='a'),
+                          Feature(f, FeatureLocation(5, 8), type='source'),
+                          Feature(i, FeatureLocation(8, 17), type='source', ref='i')], list(combined.features))
 
     def test_from_components_copy(self):
         co_1 = Component(Seq('AAATTTAAA'))

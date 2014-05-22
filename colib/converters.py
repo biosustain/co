@@ -149,7 +149,7 @@ class Converter(object):
         def convert_features(features):
             for feature in features:
                 yield SeqFeature(feature.location,
-                                 type=SO_TERM_GENBANK_TYPE_MAP.get(feature.type),
+                                 type=SO_TERM_GENBANK_TYPE_MAP.get(feature.type, feature.type),
                                  strand=feature.strand,
                                  id=feature.id,
                                  qualifiers=feature.qualifiers,

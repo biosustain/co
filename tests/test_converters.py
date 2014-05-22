@@ -52,3 +52,14 @@ class GenbankConverterTestCase(unittest.TestCase):
         # GenbankConverter.to_file(component, 'fixtures/MB_1.gb', 'Magic_Brick')
         record = GenbankConverter.to_seq_record(component)
         self.assertEqual(open('fixtures/MB_1.gb').read(), record.format('genbank'))
+
+    maxDiff = None
+
+    def test_export_combined(self):
+        c1 = Component(Seq('AGAGAGAGAGA', alphabet=DNAAlphabet()), annotations={'organism': 'Predator'})
+        c2 = Component(Seq('CGCGCGCCGCGCGCGCG', alphabet=DNAAlphabet()), annotations={'organism': 'Alien'})
+        c3 = Component(Seq('AAAAAAAAAAATTTTAA', alphabet=DNAAlphabet()))
+        c123 = Component.combine(c1, c2, c3)
+
+        record = GenbankConverter.to_seq_record(c123)
+        self.assertEqual(open('fixtures/c123.gb').read(), record.format('genbank'))

@@ -1,0 +1,21 @@
+LOCUS       .                         45 bp    DNA              UNK 01-JAN-1980
+DEFINITION  .
+ACCESSION   <unknown id>
+VERSION     <unknown id>
+KEYWORDS    .
+SOURCE      .
+  ORGANISM  .
+            .
+FEATURES             Location/Qualifiers
+     source          1..11
+                     /organism="Predator"
+                     /mol_type="other DNA"
+     source          12..28
+                     /organism="Alien"
+                     /mol_type="other DNA"
+     source          29..45
+                     /organism
+                     /mol_type="other DNA"
+ORIGIN
+        1 agagagagag acgcgcgccg cgcgcgcgaa aaaaaaaaat tttaa
+//

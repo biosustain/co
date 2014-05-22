@@ -120,11 +120,8 @@ class Component(object):
             temporary components that will later be discarded. A custom inspection can recursively enumerate features
             from linked components.
 
-        :param copy_features: When `copy_features` is set, no features with links to the original components will be
-            created.
-
-        :param alphabet: Alphabet to use for the component. If not given, the alphabet for the first component
-            will be used.
+        :param copy_features: whether to copy and translate all features from each of the components. If this feature
+            is false; fresh ``source`` features will be created for each of the components.
         """
         copy_features = kwargs.pop('copy_features', False)
 
@@ -143,9 +140,12 @@ class Component(object):
         else:
             offset = 0
             for component in components:
+                organism = component.annotations.get('organism', component.annotations.get('source', None))
                 combined.features.add(location=FeatureLocation(offset, offset + len(component.seq)),
                                       type='source',
+                                      qualifiers={'organism': organism, 'mol_type': 'other DNA'},
                                       ref=component.id)
+
                 offset += len(component)
 
         return combined
