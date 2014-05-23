@@ -5,12 +5,11 @@ from Bio.SeqFeature import CompoundLocation, FeatureLocation
 
 class OverlapError(Exception):
     """
-    This :class:`Exception` is raised when a mutation is applied to a position in a sequence that no longer
-    exists because of a previous mutation.
+    :class:`OverlapError` is raised when a mutation is applied to a position in a sequence that has been altered
+    by a previous mutation.
 
     In *strict mode*, an :class:`OverlapError` is fired more frequently, such as when a deletion is applied to a range
-    that has previously been modified by an insertion. In general, *strict mode* should be used when working
-    with data from a single source of variant calls.
+    that has previously been modified by an insertion.
     """
     pass
 
@@ -26,7 +25,6 @@ class TranslationTable(object):
     The alignment is encoded in a chain of tuples in the format ``(ungapped_size, ds, dt)``, where
     ``ungapped_size`` refers to regions that align, and the gaps ``dt`` and ``ds`` each refer to regions present
     only in the other sequence.
-
 
     .. attribute:: source_start
 
