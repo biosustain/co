@@ -2,6 +2,7 @@ import logging
 import unittest
 
 from colib import MutableTranslationTable
+from colib.mutation import DEL, INS
 from colib.translation import OverlapError
 
 
@@ -261,3 +262,9 @@ class TranslationTableTestCase(unittest.TestCase):
 
         self.assertEqual([0, None, None, None, 1, 2, 3, None, None, None], list(tt))
         self.assertEqual([0, 1, 1, 1, 1, 2, 3], [tt.ge(i) for i in range(7)])
+
+    def test_from_mutations_simple(self):
+        tt = MutableTranslationTable.from_mutations('ABCDEFGHI', (DEL(1, 2), INS(7, 'insert')))
+
+        self.assertEqual([0, None, None, 1, 2, 9, 10, 11, 12], list(tt))
+        self.assertEqual([0, 3, 4, None, None, None, None, None, None, 5, 6, 7, 8], list(~tt))

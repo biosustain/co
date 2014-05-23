@@ -66,6 +66,9 @@ class TranslationTable(object):
         self.target_start, self.target_end = target_start, target_end
         self.chain = chain
 
+    def __invert__(self):
+        return self.invert()
+
     def invert(self):
         """
         Creates a copy of the table where *source* and *target* are inverted.
@@ -80,17 +83,6 @@ class TranslationTable(object):
         tti.target_start, tti.target_end = self.source_start, self.source_end
         tti.chain = [(ungapped_size, dt, ds) for ungapped_size, ds, dt in self.chain]
         return tti
-
-    def translate_location(self, location):
-        if isinstance(location, CompoundLocation):
-            translated_parts = (self.translate_location(p) for p in location.parts)
-            return CompoundLocation(translated_parts, operator=location.operator)
-
-        if not isinstance(location, FeatureLocation):
-            raise TypeError("Only FeatureLocation or CompoundLocation"
-                            " are supported but {} was given".format(location.__class__))
-
-        return FeatureLocation()
 
     def le(self, position):
         """

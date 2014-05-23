@@ -8,14 +8,14 @@ SOURCE      .
             .
 FEATURES             Location/Qualifiers
      source          1..11
+                     /mol_type="other DNA"
                      /organism="Predator"
-                     /mol_type="other DNA"
      source          12..28
+                     /mol_type="other DNA"
                      /organism="Alien"
-                     /mol_type="other DNA"
      source          29..45
-                     /organism
                      /mol_type="other DNA"
+                     /organism
 ORIGIN
         1 agagagagag acgcgcgccg cgcgcgcgaa aaaaaaaaat tttaa
 //

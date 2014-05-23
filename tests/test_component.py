@@ -52,12 +52,13 @@ class ComponentTestCase(unittest.TestCase):
 
         combined = Component.combine(a, f, i)
 
-        print(list(combined.features))
-
         self.assertEqual('ABCDEFGHIJKLMNOPQ', str(combined.seq))
-        self.assertEqual([Feature(a, FeatureLocation(0, 5), type='source', ref='a'),
-                          Feature(f, FeatureLocation(5, 8), type='source'),
-                          Feature(i, FeatureLocation(8, 17), type='source', ref='i')], list(combined.features))
+
+        qualifiers = {'mol_type': 'other DNA', 'organism': None}
+        self.assertEqual([Feature(a, FeatureLocation(0, 5), type='source', qualifiers=qualifiers, ref='a'),
+                          Feature(f, FeatureLocation(5, 8), type='source', qualifiers=qualifiers),
+                          Feature(i, FeatureLocation(8, 17), type='source', qualifiers=qualifiers, ref='i')],
+                         list(combined.features))
 
     def test_from_components_copy(self):
         co_1 = Component(Seq('AAATTTAAA'))

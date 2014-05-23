@@ -40,11 +40,11 @@ class FeatureTestCase(unittest.TestCase):
 
         #   |████|      |████|
         # 12|3  4|5   12|3  4|5
-        # 12|3xy4|5   12|3| - 5
-        # 12|3xy|-5   12|3| xy5
+        # 12|3xy4|5   12|3  -|5
+        # 12|3xy|-5   12|3 xy|5
 
         mutated_1 = component.mutate([DEL(3), INS(3, 'xy')], strict=False)
-        self.assertEqual('3', str(list(mutated_1.features)[0].seq))  # 3xy would also be acceptable.
+        self.assertEqual('3xy', str(list(mutated_1.features)[0].seq))  # 3 would also be acceptable.
         self.assertEqual('123xy5', str(mutated_1.seq))
 
         mutated_2 = component.mutate([INS(3, 'xy'), DEL(3)], strict=False)

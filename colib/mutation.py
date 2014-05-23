@@ -52,7 +52,7 @@ class Mutation(object):
         else:
             self.size = int(size)
 
-        if isinstance(new_sequence, Component):
+        if isinstance(new_sequence, Seq):
             new_sequence = str(new_sequence)
 
         self.new_sequence = new_sequence

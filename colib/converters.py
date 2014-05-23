@@ -204,21 +204,20 @@ class _ComponentEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Feature):
             return {
-                'pos': obj.position,
-                'size': obj.size,
+                'start': obj.start,
+                'end': obj.end,
                 'type': obj.type,
-                'name': obj.name,
+                'id': obj.id,
                 'strand': obj.strand,
-                'qualifiers': obj.qualifiers,
-                'link': [obj.source.id, obj.link_is_broken] if obj.source else None
+                'qualifiers': obj.qualifiers
             }
         elif isinstance(obj, Component):
             return {
                 'parent': obj.parent.id if obj.parent else None,
-                'sequence': str(obj.sequence),
+                'sequence': str(obj.seq),
                 'mutations': obj.diff(obj.parent) if obj.parent else None,
                 'id': obj.id,
-                'meta': obj.meta,
+                'annotations': obj.annotations,
                 'features': (tuple(obj.features.added), tuple(obj.features.removed))
             }
         elif isinstance(obj, UniqueIdentifier):

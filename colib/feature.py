@@ -204,14 +204,14 @@ class ComponentFeatureSet(FeatureSet):
         tt = self.component.tt()
 
         if self.parent_feature_set and include_inherited:
-            print()
-            print()
-            print(self, start, end, len(self.component), len(tt))
-            print(tt.ge(start))
-            print(tt.le(end))
-            logging.debug(
-                'find_overlapping({}, {}): inherited between {} and {}'.format(start, end, tt.ge(start), tt.le(end)))
-            intersect |= self.parent_feature_set.overlap(tt.ge(start), tt.le(end)) - self.removed_features
+            translated_start = tt.ge(start)
+            translated_end = tt.le(end)
+
+            logging.debug('find_overlapping({}, {}): '
+                          'inherited between {} and {}'.format(start, end, translated_start, translated_end))
+
+            if translated_start <= translated_end:
+                intersect |= self.parent_feature_set.overlap(translated_start, translated_end) - self.removed_features
         return intersect
 
 
