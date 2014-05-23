@@ -9,20 +9,19 @@ class Mutation(object):
     DELINS does not have its own native Mutation class. These are best implemented in
     third-party libraries or using Mutation directly.
 
-    A ``Mutation(start, end, new_sequence)`` is similar to the two derived mutations which however
-    do not account for substitutions::
+    A ``Mutation(start, size, new_sequence)`` is similar to the two derived mutations::
 
-        DEL(start, end - start + 1), INS(start, new_sequence, replace=True)
+        DEL(start, size), INS(start, new_sequence)
 
     .. note::
         Mutation are stored as ``(position, size)`` pairs because ``(start, end)`` pairs do not allow for
         unambiguous zero-length mutations (i.e. insertions). It is possible to simulate an insertion by keeping one
-        character of the original sequence, but that would set ambiguity to the exact site of the mutated sequence.
+        character of the original sequence, but that would introduce ambiguity to the exact site of the mutated sequence.
 
     :param int position: start index
     :param int size: length of deletion
     :param new_sequence: insertion sequence
-    :type new_sequence: str, Component or Bio.Seq
+    :type new_sequence: :class:`str`, :class:`Component` or :class:`Bio.Seq`
 
     .. attribute:: new_sequence
 
@@ -59,10 +58,16 @@ class Mutation(object):
 
     @property
     def start(self):
+        """
+        Identical to :attr:`Mutation.position`
+        """
         return self.position
 
     @property
     def end(self):  # FIXME *dangerous* needs review.
+        """
+        Computed end coordinate of the deletion. Use with caution.
+        """
         if self.size in (0, 1):
             return self.position
         return self.position + self.size - 1
@@ -75,12 +80,21 @@ class Mutation(object):
         return len(self.new_sequence)
 
     def is_substitution(self):
+        """
+        ``True`` if the size of the deletion is equal to the size of the insertion.
+        """
         return self.size == len(self.new_sequence)
 
     def is_deletion(self):
+        """
+        ``True`` if the size of the deletion is larger than the size of the insertion
+        """
         return self.size > len(self.new_sequence)
 
     def is_insertion(self):
+        """
+        ``True`` if the size of the deletion is zero and ``new_sequence`` is not empty.
+        """
         return not self.is_substitution() and self.new_size > 0
 
     def __repr__(self):

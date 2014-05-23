@@ -120,9 +120,6 @@ class Converter(object):
             annotations=record.annotations)
 
         for feature in record.features:
-            if feature.type == 'source':
-                continue
-
             feature_qualifiers = feature.qualifiers
 
             # clean up synonyms for easier indexing:
@@ -182,14 +179,7 @@ class GenbankConverter(Converter):
 
     @classmethod
     def to_file(cls, component, file):
-        record = SeqRecord(component.seq,
-                           id=component.id,
-                           name=component.name,
-                           features=list(component.features),
-                           description=component.description,
-                           annotations=component.annotations)
-
-        return SeqIO.write(record, file, 'genbank')
+        return SeqIO.write(cls.to_seq_record(component), file, 'genbank')
 
 
 class FASTAConverter(Converter):

@@ -268,7 +268,7 @@ class MutableTranslationTable(TranslationTable):
         """
         :param sequence: the *source* sequence
         :param mutations: iterable of :class:`Mutation` objects
-        :param strict: whether to use strict mode
+        :param bool strict: use strict mode
         """
         tt = MutableTranslationTable(len(sequence))
 
@@ -293,7 +293,10 @@ class MutableTranslationTable(TranslationTable):
 
     @classmethod
     def from_sequences(cls, reference, query, algorithm=None):
-        raise NotImplementedError
+        """
+        :raises NotImplementedError:
+        """
+        raise NotImplementedError()
 
     def _insert_gap(self, position, source_gap, target_gap, strict):
         if not 0 <= position <= self.source_size:
@@ -448,24 +451,33 @@ class MutableTranslationTable(TranslationTable):
 
     def insert(self, position, size, strict=True):
         """
-        When a sequence is inserted in the target sequence, this results in a gap in the alignment of the
-        source sequence. The size of the target sequence also increases.
+        Insert a gap in the *source* sequence
 
-        The following edge cases occur:
-
-        - If the insertion happens at position 0, no gap will be inserted, but the start of the source alignment
-          is increased.
-        - If the insertion happens at the end of the source sequence, likewise, the end of the source alignment
-          increases. In both cases the size of the source sequence stays the same.
-        - If the insertion happens inside a gap in the source sequence, or within the source sequence,
-          the size of the source gap is increased unless `strict` is `True`, in which case an error is raised.
-        - If the insertion happens inside a gap in the target sequence, an error is raised.
-
+        :param int position: start of gap site
+        :param int size: length of gap
+        :param bool strict: use strict mode
+        :raises OverlapError: in various edge cases involving overlapping mutations, particularly in `strict` mode.
         """
         self._insert_gap(position, size, 0, strict)
 
     def delete(self, position, size, strict=True):
+        """
+        Insert a gap in the *target* sequence
+
+        :param int position: start of gap site
+        :param int size: length of gap
+        :param bool strict: use strict mode
+        :raises OverlapError: in various edge cases involving overlapping mutations, particularly in `strict` mode.
+        """
         self._insert_gap(position, 0, size, strict)
 
     def substitute(self, position, size, strict=True):
+        """
+        Insert two gaps of equal length in the *source* and *target* sequences
+
+        :param int position: start of gap site
+        :param int size: length of gap
+        :param bool strict: use strict mode
+        :raises OverlapError: in various edge cases involving overlapping mutations, particularly in `strict` mode.
+        """
         self._insert_gap(position, size, size, strict)

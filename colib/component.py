@@ -24,20 +24,18 @@ class Component(object):
     to by another component -- either by direct mutation or through a `_Feature`. A strategy for deleting components
     without destroying descendant objects may be necessary.
 
-    .. features::
+    .. attribute:: features
 
-        A list of additional features (features in addition to those inherited from ``parent``)
+        :class:`FeatureSet` containing the features present in this component.
 
-    .. removed_features::
-
-        A list of removed features (features present in ``parent`` or one of its parents, not present
-        in this component)
-
-    .. attribute:: display_id
+    .. attribute:: id
 
         A unique identifier for this component; preferably either :class:`str` or :class:`UniqueIdentifier`.
 
-    .. seealso:: :class:`Bio.Seq`
+
+    :param features: A list of additional features (features in addition to those inherited from ``parent``)
+    :param removed_features: A list of removed features (features present in ``parent`` or one of its parents,
+        but not present in this component)
 
     """
     def __init__(self,
@@ -96,11 +94,11 @@ class Component(object):
     def __repr__(self):
         return '{}({}, id={})'.format(self.__class__.__name__, repr(self.seq), repr(self.id))
 
-    def to_seq_record(self):
-        raise NotImplementedError()
-
     @property
     def seq(self):
+        """
+        The nucleotide sequence of this component, type :class:`Bio.Seq`.
+        """
         return self._seq
 
     def tt(self, ancestor=None):
@@ -112,13 +110,6 @@ class Component(object):
     def combine(cls, *components, **kwargs):
         """
         Joins multiple components together, creating a source feature annotation for each.
-
-        .. warning::
-
-            Optionally, features from the old components can be copied into the new component. This is strongly
-            discouraged when working with large components and should only be done when assembling a component from
-            temporary components that will later be discarded. A custom inspection can recursively enumerate features
-            from linked components.
 
         :param copy_features: whether to copy and translate all features from each of the components. If this feature
             is false; fresh ``source`` features will be created for each of the components.
@@ -166,39 +157,21 @@ class Component(object):
         # TODO create a "broken reference" object and re-attach here
         return feature._shift(offset, component)
 
-        # if not isinstance(feature, ComponentSeqFeature):
-        #     pass
-        #
-        #
-        # if component == self.component:
-        #     logging.warn('Translating {} from component {} to identical component'.format(self, self.component))
-        #     return self
-        # if using_tt is None:
-        #     using_tt = component.tt(self.component)
-        #
-        # # TODO handle CompoundLocation
-        #
-        # print(self._position, using_tt[self.position])
-
     def mutate(self, mutations, strict=True):
         """
         Creates a copy of this :class:`Component` and applies all :param:`mutations`.
 
-        Mutations are applied in order based on the original coordinate system. If `strict=True` and multiple
-        mutations affect the same area, an `OverlapException` is raised. Otherwise, an `OverlapException` may
-        still be raised if a mutation falls into a position that has previously been deleted.
-
-        When a mutation affects a feature that has a linked component, that link will be flagged as `broken`.
-
-        Memory
-        ^^^^^^
+        Mutations are applied in order based on the original coordinate system. If ``strict=True`` and multiple
+        mutations affect the same area, a :class:`OverlapException` is raised. Otherwise, a :class:`OverlapException`
+        may still be raised if a mutation falls into a position that has previously been deleted or the intended effect
+        of a series of mutation is ambiguous.
 
         Although mutations are executed in order, the mutate function will attempt to resize features based on where
-        their start or end based have been in the reference sequence if a based is lost and then restored in multiple
+        their start or end based have been in the reference sequence if a base is lost and then restored over multiple
         mutations. For each deleted base, the algorithm tracks the next base to the left and to the right that was
-        not deleted. In strict mode, since mutations are not allowed to find_overlapping, this only affects directly adjacent
-        mutations.
+        not deleted.
 
+        *For example:*
         ::
 
               ████      ████          ██        ██     ██        ██          ██       ████
@@ -207,11 +180,12 @@ class Component(object):
             123xy-5   123xy-5    123xy-5   123xy-5    123xy-5   123xy-5      █░       ████
               ███░      ███░          ░█        ░█     ██        ██
 
-        :param strict: If `True`, will fail if two mutations affect the same sequence.
-        :param clone: `True` by default; if `False`, the component will *NOT* be cloned and the changes will be applied
-            to the original version instead.
-        :returns: A mutated copy of the component (or a reference to the original component if `clone=False`)
-        :raises OverlapException: if mutations find_overlapping
+        :param strict: If ``True``, will fail if two mutations affect the same sequence.
+        :param mutations: ``list`` of :class:`Mutation` objects
+        :returns: A mutated :class:`Component`
+        :raises OverlapException: When mutations overlap and interact in ambiguous ways that the algorithm can't
+            handle.
+
         """
         component = Component(seq=self._seq, parent=self)
         features = component.features
@@ -386,7 +360,7 @@ class Component(object):
         """
         Returns `True` if this object is a mutated version of `other`, `False` otherwise.
 
-        :returns: Boolean
+        :returns: ``bool``
         """
         return other in self.get_lineage()
 
@@ -394,12 +368,6 @@ class Component(object):
     def diff(self, other):
         """
         Returns the list of mutations that represent the difference between this component and another.
-
-        .. note::
-
-            This may be aided by the storage library. The storage library (if attached) should be called first to see if
-            there is some sort of optimized lookup. The library itself will either implement an optimized version or
-            fall back to the diff solution used here.
         """
         assert isinstance(other, Component)
         if other == self.parent:

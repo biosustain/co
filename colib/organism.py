@@ -2,6 +2,11 @@ from colib.difference import Diff
 
 
 class FeatureView(object):
+    """
+    Iterates over all features in a set of components -- not necessarily in order -- and
+    provides search access to these features.
+    """
+
     def __init__(self, components):
         self.components = set(components)
 
@@ -12,6 +17,7 @@ class FeatureView(object):
         raise NotImplementedError()
 
     def __iter__(self):
+        # TODO use itertools.merge
         for component in self.components:
             for feature in component.features:
                 yield feature
@@ -23,42 +29,54 @@ class FeatureView(object):
 class HaploidOrganism(object):
     """
 
-    .. attribute display_id:
+    .. attribute:: id
 
+        ID of the organism
+
+    .. attribute:: parent
+
+        Parent organism
     """
 
-    def __init__(self, display_id, parent=None):
-        self.display_id = display_id
+    def __init__(self, id, parent=None):
+        self.id = id
         self.parent = parent
         self.components = {}
-        self.component_types = {}
 
-    def set(self, name, component, type_=None):
+    def set(self, name, component):
+        """
+
+        :param str name: key for this component
+            e.g. ``'genome'``, ``'chr1'``, or ``'pLASMID'``
+        :param Component component:
+        """
         self.components[name] = component
-        self.component_types = type_
 
     def remove(self, name):
+        """
+        :param str name: key of the component to remove
+        """
         del self.components[name]
-        del self.component_types[name]
 
     def get_lineage(self, inclusive=True):
+        """
+        Iterate over all ancestors of this organism
+
+        :param bool inclusive: whether to include the organism itself in the lineage
+        :returns: iterator over :class:`HaploidOrganism` objects
+        """
         if inclusive:
             yield self
 
         for ancestor in self.parent.get_lineage():
             yield ancestor
 
-    def is_locked(self):
-        """
-        An organism is locked for changes as soon as it has any children; an organism
-        is locked for the creation of children while it is not registered in a context.
-        """
-        raise NotImplementedError()
-
     @property
     def features(self):
         """
         A read-only view of all the features present in all components of the organism.
+
+        :returns: :class:`FeatureView`
         """
         return FeatureView(self.components.values())
 
