@@ -226,7 +226,7 @@ class Component(object):
 
         # check that all mutations are in range:
         for mutation in mutations:
-            if mutation.end >= len(self.seq):
+            if mutation.end > len(self.seq):
                 raise IndexError('{} ends at {} but sequence length is {}'.format(mutation, mutation.end, len(self)))
 
         for mutation in mutations:
@@ -236,6 +236,7 @@ class Component(object):
 
             # FIXME handle addition to end of sequence.
             # FIXME requires proper handling of r/q_end to find out new size.
+
 
             logging.debug('')
             logging.debug('---> mutation: "%s"', mutation)
@@ -371,6 +372,11 @@ class Component(object):
         return component
 
     def get_lineage(self):
+        """
+        Iterate over the ancestors of this component.
+
+        :return: iterator over :class:`Component` objects
+        """
         component = self
         while component.parent:
             component = component.parent
@@ -379,6 +385,7 @@ class Component(object):
     def inherits_from(self, other):
         """
         Returns `True` if this object is a mutated version of `other`, `False` otherwise.
+
         :returns: Boolean
         """
         return other in self.get_lineage()

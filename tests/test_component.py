@@ -72,6 +72,19 @@ class ComponentTestCase(unittest.TestCase):
         self.assertEqual([Feature(combined, FeatureLocation(3, 6), type='repeat', qualifiers={'name': 'ts'}),
                           Feature(combined, FeatureLocation(9, 19), type='repeat', qualifiers={'name': 'gs'})], list(combined.features))
 
+    def test_lineage_simple(self):
+
+        generation1 = Component('Ax')
+        generation2 = generation1.mutate([INS(1, 'B')])
+        generation3 = generation2.mutate([INS(2, 'C')])
+        other = Component('a')
+
+        self.assertEqual('ABx', str(generation2.seq))
+        self.assertEqual(False, generation1.inherits_from(generation3))
+        self.assertEqual(True, generation3.inherits_from(generation1))
+        self.assertEqual(False, generation3.inherits_from(other))
+        self.assertEqual([generation2, generation1], list(generation3.get_lineage()))
+
     @unittest.SkipTest
     def test_mutate_break_source(self):
         pass
