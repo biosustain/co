@@ -28,11 +28,12 @@ Contents:
 Road map
 ========
 
-Current plans for future releases include a *version tracking* system of some sort that allows a mutated component to
-be updated with a more accurate sequence while maintaining the relationship to the component's child component. Most
-likely, versions will be hashes of the mutations that make up a component.
-
-An improved `non-strict` mode with better tolerance for overlapping mutations is also being considered.
+- Future releases may include a *version tracking* system to track and propagate updated mutations due to e.g.
+  better re-sequencing. Versioned components will maintain the relationship to the component's child component. Most
+  likely, versions will be hashes of sequences and their mutations.
+- An improved `non-strict` mode with better tolerance for overlapping mutations is planned.
+- As this is a very early release of COLIB, there is a long list of general improvements---they
+  will be developed on demand.
 
 Indices and tables
 ==================
