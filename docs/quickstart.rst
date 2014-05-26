@@ -5,6 +5,7 @@ Quickstart
 
 .. module:: colib
 
+
 Simple mutation
 ---------------
 

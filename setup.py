@@ -8,7 +8,7 @@ setup(
     packages=find_packages(exclude=['*tests*']),
     url='',
     license='MIT',
-    author='Lars Schoöning',
+    author='Lars Schoening',
     author_email='lays@biosustain.dtu.dk',
     description='',
     test_suite='nose.collector',
