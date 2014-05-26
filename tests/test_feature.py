@@ -1,8 +1,8 @@
 # coding: utf-8
 import unittest
-from Bio.SeqFeature import FeatureLocation
+from Bio.SeqFeature import FeatureLocation, SeqFeature
 
-from colib import Component, Feature
+from colib import Component, Feature, FeatureSet
 from colib.mutation import DEL, INS
 
 
@@ -59,3 +59,41 @@ class FeatureTestCase(unittest.TestCase):
 
     def test_feature_reverse_strand(self):
         pass
+
+
+class FeatureSetTestCase(unittest.TestCase):
+
+    def test_iter(self):
+        fs = FeatureSet()
+        f1 = fs.add(FeatureLocation(20, 30), type='misc')
+        f2 = fs.add(FeatureLocation(5, 5, strand=-1), type='CDS')
+        f3 = fs.add(FeatureLocation(0, 10), type='promoter')
+        f4 = fs.add(FeatureLocation(30, 40), type='promoter')
+
+        self.assertEqual([f3, f2, f1, f4], list(fs))
+
+    def test_remove(self):
+        fs = FeatureSet()
+        f1 = fs.add(FeatureLocation(20, 30), type='misc')
+        f2 = fs.add(FeatureLocation(5, 5, strand=-1), type='CDS')
+        f3 = fs.add(FeatureLocation(0, 10), type='promoter')
+        fs.remove(f2)
+
+        self.assertEqual([f3, f1], list(fs))
+
+    def test_find(self):
+        fs = FeatureSet()
+        f1 = fs.add(FeatureLocation(20, 30), type='misc')
+        f2 = fs.add(FeatureLocation(5, 5, strand=-1), type='CDS', id='y')
+        f3 = fs.add(FeatureLocation(0, 10), type='promoter', id='x')
+        f4 = fs.add(FeatureLocation(30, 40), type='promoter', qualifiers={'gene': 'abcD'})
+
+        self.assertEqual([f3, f4], list(fs.find(type='promoter')))
+        self.assertEqual([f2], list(fs.find(type='CDS')))
+        self.assertEqual([f2], list(fs.find(strand=-1)))
+        self.assertEqual([f1, f4], list(fs.find(between_start=11)))
+        self.assertEqual([f3], list(fs.find(id='x')))
+        self.assertEqual([f3], list(fs.find(id='x', type='promoter')))
+        self.assertEqual([], list(fs.find(id='x', type='CDS')))
+        self.assertEqual([f4], list(fs.find(gene='abcD')))
+

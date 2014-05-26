@@ -2,6 +2,7 @@ import weakref
 import heapq
 import logging
 from Bio.SeqFeature import SeqFeature, FeatureLocation
+import sys
 
 from colib.interval import IntervalTree, BaseInterval
 
@@ -19,12 +20,18 @@ class FeatureWrapper(BaseInterval):
 
 
 class FeatureSet(object):
+    """
+    An ordered collection of :class:`SeqFeature` objects.
+
+    :param type feature_class: type of the features stored in the collection; defaults to :class:`SeqFeature` and must
+        inherit from it.
+    """
 
     def __init__(self, feature_class=None):
         if feature_class is None:
             feature_class = SeqFeature
-        elif not issubclass(feature_class, (BaseInterval, SeqFeature)):
-            raise RuntimeError("FeatureSet expects a feature class of type Interval or SeqFeature")
+        elif not issubclass(feature_class, SeqFeature):
+            raise RuntimeError("FeatureSet expects a feature class that inherits from SeqFeature")
 
         self._features = IntervalTree()
         self._feature_class = feature_class
@@ -46,11 +53,20 @@ class FeatureSet(object):
         return '{}({})'.format(self.__class__.__name__, list(self))
 
     def copy(self):
+        """
+        :returns: a copy of this collection
+        :rtype: :class:`FeatureSet`
+        """
         fs = FeatureSet(feature_class=self._feature_class)
         fs._features = self._features.copy()
         return fs
 
     def add(self, *args, **kwargs):
+        """
+        Creates a feature object from the given ``args`` and ``kwargs`` and adds it to the collection.
+
+        :rtype: :class:`SeqFeature`
+        """
         feature = self._feature_class(*args, **kwargs)
 
         if isinstance(feature, BaseInterval):
@@ -60,12 +76,46 @@ class FeatureSet(object):
         return feature
 
     def remove(self, feature):
+        """
+        Removes the given feature from the collection
+        """
         self._features.remove(feature)
 
-    def find(self, between_start=None, between_end=None, **kwargs):
-        raise NotImplementedError()
+    def find(self,
+             between_start=None,
+             between_end=None,
+             type=None,
+             id=None,
+             strand=None,
+             **qualifiers):
+        """
+        Iterate over all features matching the search parameters.
+
+        - ``between_start`` and ``between_end`` can be used to restrict the search range.
+        - ``type``, ``id``, and ``strand`` each restrict the search to features that match on these attributes
+        - ``qualifiers`` is an arbitrary group of keyword arguments that will be matched to the qualifier keys of
+          each feature. Each key must be present and have the same value as in the search parameters.
+
+        """
+
+        if between_start or between_end:
+            it = self.overlap(between_start or 0, between_end or sys.maxsize)
+        else:
+            it = iter(self)
+
+        attrs = [(k, v) for k, v in (('type', type), ('id', id), ('strand', strand)) if v is not None]
+
+        for feature in it:
+            if any(getattr(feature, key) != value for key, value in attrs):
+                continue
+            if any(feature.qualifiers.get(key) != value for key, value in qualifiers.items()):
+                continue
+            yield feature
 
     def overlap(self, start, end):
+        """
+        Returns an iterator over all features in the collection that overlap the given range.
+        """
         if start > end:
             raise RuntimeError("start cannot be larger than end.")
 

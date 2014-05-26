@@ -22,7 +22,7 @@ class HaploidOrganismTestCase(unittest.TestCase):
         self.assertEqual([Feature(c1, FeatureLocation(1, 10), type='repeat')], list(c1.features))
         self.assertEqual([Feature(c2, FeatureLocation(1, 10), type="repeat")], list(c2.features))
 
-        strain = HaploidOrganism(display_id='strain')
+        strain = HaploidOrganism(id='strain')
         strain.set('a', c1)
         strain.set('b', c2)
         strain.set('c', c2)
@@ -32,7 +32,7 @@ class HaploidOrganismTestCase(unittest.TestCase):
                           Feature(Component('TTTTTTTTTT'), FeatureLocation(1, 10), type="repeat")}, set(strain.features))
 
     def test_mutate_strain(self):
-        strain = HaploidOrganism(display_id='strain-1')
+        strain = HaploidOrganism(id='strain-1')
 
         genome = Component('A' * 25 + 'C' * 25 + 'G' * 25 + 'T' * 25)
         genome.features.add(FeatureLocation(0, 25), type='a')

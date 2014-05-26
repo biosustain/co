@@ -19,6 +19,4 @@ Proceed with caution when using the two types interchangeably.
 
 .. automodule:: feature
    :members:
-   :undoc-members:
-
 

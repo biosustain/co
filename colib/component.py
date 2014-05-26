@@ -16,14 +16,6 @@ from colib.translation import OverlapError, MutableTranslationTable
 
 class Component(object):
     """
-    If the underlying library supports it, mutated `Component` objects can be stored as a set of the features
-    that have been added or removed from the parent component. It is recommended that the library implements a
-    caching strategy for quickly looking up the precise list of features contained in a component.
-
-    `Component` objects, once created, SHOULDN'T be edited. However they MAY be edited until they are referred
-    to by another component -- either by direct mutation or through a `_Feature`. A strategy for deleting components
-    without destroying descendant objects may be necessary.
-
     .. attribute:: features
 
         :class:`FeatureSet` containing the features present in this component.
