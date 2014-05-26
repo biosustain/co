@@ -144,9 +144,9 @@ class FeatureSet(object):
 
 class Feature(SeqFeature, BaseInterval):
     """
-
-    :class:`Feature` does not support the ``sub_features`` argument.
-
+    :class:`Feature` derives from :class:`SeqFeature` and binds to a particular
+    :class:`Component`. :class:`Feature` does not support the ``sub_features`` argument. All other
+    :class:`SeqFeature` arguments are supported.
     """
 
     def __init__(self, component, *args, **kwargs):
@@ -158,7 +158,6 @@ class Feature(SeqFeature, BaseInterval):
         self.component = component
 
         super(Feature, self).__init__(*args, **kwargs)
-
 
     def __hash__(self):
         return hash((self.location.start, self.location.end, self.type))
@@ -184,9 +183,7 @@ class Feature(SeqFeature, BaseInterval):
         # TODO refs?
 
     def _move(self, start, end):
-
         # TODO ref
-
         new_location = FeatureLocation(start, end, strand=self.location.strand)
         return self._move_to_location(new_location)
 
@@ -195,6 +192,9 @@ class Feature(SeqFeature, BaseInterval):
 
     @property
     def seq(self):
+        """
+        The sequence of the feature within the component as :class:`Seq` object.
+        """
         seq = self.component.seq[self.start:self.end]
         if self.location.strand == REVERSE_STRAND:
             return seq.reverse_complement()
@@ -202,10 +202,14 @@ class Feature(SeqFeature, BaseInterval):
 
     @property
     def start(self):
+        """
+        """
         return self.location.start
 
     @property
     def end(self):
+        """
+        """
         return self.location.end
 
 
@@ -258,6 +262,9 @@ class ComponentFeatureSet(FeatureSet):
         tt = self.component.tt()
 
         if self.parent_feature_set and include_inherited:
+            if end >= tt.source_size:  # FIXME may be source_end
+                end = tt.source_size - 1
+
             translated_start = tt.ge(start)
             translated_end = tt.le(end)
 

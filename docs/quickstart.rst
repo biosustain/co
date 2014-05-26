@@ -118,8 +118,38 @@ Internally, these values are stored in ``Component.features.added`` and ``Compon
 Feature search
 ^^^^^^^^^^^^^^
 
-- find method
-- overlap method
+Features can be filtered using :meth:`FeatureSet.find`. This search function supports filtering by region, type, id,
+strand as well as any qualifier. Multiple search parameters are interpreted as logical "AND"---i.e. all of them have
+to match.
+
+.. code-block:: python
+
+    >>> from colib import *
+    >>> from Bio.SeqFeature import *
+    >>>
+    >>> letters = Component('AABBDDEE', features=[
+    ...             SeqFeature(FeatureLocation(0, 1), type='vowel'),
+    ...             SeqFeature(FeatureLocation(2, 5), type='consonant'),
+    ...             SeqFeature(FeatureLocation(5, 6), type='vowel', qualifiers={'test': 'yes'})])
+    >>>
+    >>> list(letters.features.find(type='vowel'))
+    [Feature(FeatureLocation(ExactPosition(0), ExactPosition(1)), type='vowel'), Feature(FeatureLocation(ExactPosition(5), ExactPosition(6)), type='vowel')]
+    >>> list(letters.features.find(between_start=3))
+    [Feature(FeatureLocation(ExactPosition(5), ExactPosition(6)), type='vowel'), Feature(FeatureLocation(ExactPosition(2), ExactPosition(5)), type='consonant')]
+    >>>
+    >>> from colib.mutation import *
+    >>> letters = letters.mutate([INS(4, 'CC')])
+    >>> letters.seq
+    Seq('AABBCCDDEE', Alphabet())
+    >>> list(letters.features.find(type='consonant'))
+    [Feature(FeatureLocation(ExactPosition(2), ExactPosition(7)), type='consonant')]
+    >>> list(letters.features.find(type='vowel'))
+    [Feature(FeatureLocation(ExactPosition(0), ExactPosition(1)), type='vowel'), Feature(FeatureLocation(ExactPosition(7), ExactPosition(8)), type='vowel')]
+    >>> list(letters.features.find(type='consonant', between_end=1))
+    []
+    >>> list(letters.features.find(test='yes'))
+    [Feature(FeatureLocation(ExactPosition(7), ExactPosition(8)), type='vowel')]
+
 
 Combining components
 --------------------

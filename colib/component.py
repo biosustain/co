@@ -72,7 +72,11 @@ class Component(object):
         if features is not None:
             for feature in features:
                 # FIXME need to translate SeqFeature to Feature!!!!!!!!!!
-                self.features.add(feature)
+                self.features.add(self._convert_to_feature(feature))
+
+        if removed_features is not None:
+            for feature in removed_features:
+                self.features.remove(feature)
 
     def __hash__(self):
         return hash(str(self.seq))  # Biopython uses id() to generate Seq.__hash__ and to test for equality
@@ -85,6 +89,20 @@ class Component(object):
 
     def __repr__(self):
         return '{}({}, id={})'.format(self.__class__.__name__, repr(self.seq), repr(self.id))
+
+    def _convert_to_feature(self, feature):
+        assert isinstance(feature, SeqFeature)
+        if not isinstance(feature, Feature):
+            return Feature(self,
+                           type=feature.type,
+                           location=feature.location,
+                           location_operator=feature.location_operator,
+                           strand=feature.strand,
+                           id=feature.id,
+                           qualifiers=feature.qualifiers,
+                           ref=feature.ref,
+                           ref_db=feature.ref_db)
+        return feature
 
     @property
     def seq(self):
