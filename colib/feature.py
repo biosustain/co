@@ -52,6 +52,13 @@ class FeatureSet(object):
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, list(self))
 
+    @staticmethod
+    def _wrap_feature(feature):
+        if isinstance(feature, BaseInterval):
+            return feature
+        else:
+            return FeatureWrapper(feature)
+
     def copy(self):
         """
         :returns: a copy of this collection
@@ -69,17 +76,14 @@ class FeatureSet(object):
         """
         feature = self._feature_class(*args, **kwargs)
 
-        if isinstance(feature, BaseInterval):
-            self._features.add(feature)
-        else:
-            self._features.add(FeatureWrapper(feature))
+        self._features.add(self._wrap_feature(feature))
         return feature
 
     def remove(self, feature):
         """
         Removes the given feature from the collection
         """
-        self._features.remove(feature)
+        self._features.remove(self._wrap_feature(feature))
 
     def find(self,
              between_start=None,
