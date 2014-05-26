@@ -1,3 +1,4 @@
+import itertools
 from colib.difference import Diff
 
 
@@ -13,14 +14,13 @@ class FeatureView(object):
     def find(self, **kwargs):
         """
         Searches all components and yields features matching the constraints.
+
+        .. seealso:: :meth:`feature.FeatureSet.find`
         """
-        raise NotImplementedError()
+        return itertools.chain(*(c.find(**kwargs) for c in self.components))
 
     def __iter__(self):
-        # TODO use itertools.merge
-        for component in self.components:
-            for feature in component.features:
-                yield feature
+        return itertools.chain(*(c.features for c in self.components))
 
     def __len__(self):
         return sum(len(c.features) for c in self.components)

@@ -261,6 +261,20 @@ class MutableTranslationTable(TranslationTable):
                                                       target_end=size,
                                                       chain=[(size, 0, 0)])
 
+    def freeze(self):
+        """
+        Return an immutable version of this translation table.
+
+        :rtype: :class:`TranslationTable`
+        """
+        tt = TranslationTable.__new__(TranslationTable)
+        tt.source_size = self.source_size
+        tt.target_size = self.target_size
+        tt.source_start, tt.source_end = self.source_start, self.source_end
+        tt.target_start, tt.target_end = self.target_start, self.target_end
+        tt.chain = list(self.chain)
+        return tt
+
     @classmethod
     def from_mutations(cls, sequence, mutations, strict=True):
         """

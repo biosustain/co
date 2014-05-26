@@ -8,11 +8,9 @@
 Welcome to colib's documentation!
 =================================
 
-``colib`` is a library for altering DNA sequence records in BioPython. Using mutations, the library lets you create new
-sequence records and lift over features from one sequence to another.
-
-The primary classes of importance in ``colib`` are :class:`Component`, :class:`Feature`, :class:`mutation.Mutation`
-and :class:`organism.HaploidOrganism`. These can encode lineages of annotated DNA components and strains.
+COLIB is a Python library for accessing and altering annotated DNA sequences. It keeps track of components and lifts
+over feature annotations when a component is "mutated" by applying a series of mutations. With :mod:`colib` you can
+build new consensus sequences for cloned organisms and follow changes to feature annotations within a lineage.
 
 Contents:
 ---------
@@ -21,10 +19,10 @@ Contents:
    :maxdepth: 2
 
    quickstart
-   translation
    mutations
    component
    organisms
+   translation
 
 Road map
 ========
@@ -33,10 +31,7 @@ Current plans for future releases include a *version tracking* system of some so
 be updated with a more accurate sequence while maintaining the relationship to the component's child component. Most
 likely, versions will be hashes of the mutations that make up a component.
 
-Also planned is a *context* interface that can be implemented to automatically save, load and look up parts in the
-context of a storage backend.
-
-A improved `non-strict` mode with better tolerance for overlapping mutations is also being considered.
+An improved `non-strict` mode with better tolerance for overlapping mutations is also being considered.
 
 Indices and tables
 ==================

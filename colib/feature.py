@@ -119,6 +119,9 @@ class FeatureSet(object):
     def overlap(self, start, end):
         """
         Returns an iterator over all features in the collection that overlap the given range.
+
+        :param int start: overlap region start
+        :param int end: overlap region end
         """
         if start > end:
             raise RuntimeError("start cannot be larger than end.")
@@ -214,6 +217,20 @@ class Feature(SeqFeature, BaseInterval):
 
 
 class ComponentFeatureSet(FeatureSet):
+    """
+    An extended version of :class:`FeatureSet` that binds to a :class:`Component` and inherits from any
+    :class:`FeatureSet` in the parent of a component.
+
+    When iterating over this feature set, any inherited features are also returned.
+
+    .. attribute:: removed_features
+
+        Removed features are stored in :attr:`removed_features` if they are present in the parent, but not in
+        :attr:`component`.
+
+    .. attribute:: component
+
+    """
     def __init__(self, component, removed_features=None, feature_class=None):
         super(ComponentFeatureSet, self).__init__(feature_class or Feature)
         self.component = component
@@ -241,15 +258,19 @@ class ComponentFeatureSet(FeatureSet):
 
     @property
     def added(self):
+        """
+        Return the set of features added to this component, excluding any inherited features.
+        """
         return self._features
 
     @property
     def removed(self):
+        """
+        Return all features present in the parent component's feature set but removed from this feature set.
+        """
         return self.removed_features
 
     def remove(self, feature):
-        """
-        """
         if feature in self._features:
             self._features.remove(feature)
         elif self.parent_feature_set and feature in self.parent_feature_set:
@@ -258,6 +279,14 @@ class ComponentFeatureSet(FeatureSet):
             raise KeyError(feature)
 
     def overlap(self, start, end, include_inherited=True):
+        """
+        Returns an iterator over all features in the collection that overlap the given range.
+
+        :param int start: overlap region start
+        :param int end: overlap region end
+        :param bool include_inherited: if ``True``, also yield all overlapping features in any ancestors of the
+                                       component
+        """
         intersect = set(super(ComponentFeatureSet, self).overlap(start, end))
         tt = self.component.tt()
 

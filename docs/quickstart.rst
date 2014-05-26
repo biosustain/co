@@ -3,14 +3,13 @@
 Quickstart
 ==========
 
+.. module:: colib
+
 Simple mutation
 ---------------
 
-.. module:: colib
 
-.. without features
-
-To illustrate what `colib` is designed for, let's begin with a hello world example:
+To illustrate what :mod:`colib` is designed for, let's begin with a hello world example:
 
 .. code-block:: python
 
@@ -24,15 +23,9 @@ To illustrate what `colib` is designed for, let's begin with a hello world examp
     Seq('Hello world!', Alphabet())
 
 
-
-- components
-- mutations
-- features
-
-
 .. module:: mutation
 
-Mutation types that inherit from :class:`Mutation` are :class:`INS`,  :class:`DEL`, :class:`SUB` for substitutions, and
+Mutation types are :class:`Mutation` as well as :class:`INS`,  :class:`DEL`, :class:`SUB` for substitutions, and
 :class:`SNP` for SNPs.
 
 .. module:: colib
@@ -41,62 +34,63 @@ Mutation types that inherit from :class:`Mutation` are :class:`INS`,  :class:`DE
 Features & feature inheritance
 ------------------------------
 
+:attr:`Component.feature` stores feature annotations in :class:`Feature` format. These feature annotations are attached
+to the component they are defined in allowing, among other things, easy access to a feature sequence. Features are
+attached to a component like so:
+
 .. code-block:: python
 
     >>> from Bio.SeqFeature import *
     >>>
-    >>> slogan = Component('Colib is for DNA components')
-    >>> slogan.features.add(FeatureLocation(0, 5), type='library')
-    Feature(FeatureLocation(ExactPosition(0), ExactPosition(5)), type='library')
-    >>> slogan.features.add(FeatureLocation(13, 16), id='DNA')
-    Feature(FeatureLocation(ExactPosition(13), ExactPosition(16)), id='DNA')
+    >>> slogan = Component('Colibrary is for DNA components', features=[
+    ...                 SeqFeature(FeatureLocation(0, 9), type='name'),
+    ...                 SeqFeature(FeatureLocation(17, 20), id='DNA')])
     >>>
-    >>> slogan.features.add(FeatureLocation(17, 28)).seq
+    >>> slogan.features.add(FeatureLocation(21, 32)).seq
     Seq('components', Alphabet())
-    >>>
     >>> [f.seq for f in slogan.features]
-    [Seq('Colib', Alphabet()), Seq('DNA', Alphabet()), Seq('components', Alphabet())]
-    >>>
+    [Seq('Colibrary', Alphabet()), Seq('DNA', Alphabet()), Seq('components', Alphabet())]
 
 
-FIXME Colib should not become Colibary, but Co[lib] could become Co[library]?
-
-
-`colib` also translates feature annotations when mutating:
-
+When a component is mutated, :mod:`colib` automatically translates the feature annotations from the parent to
+the new coordinate system:
 
 .. code-block:: python
 
-    >>> new_slogan = slogan.mutate([DEL(13, 3), INS(5, 'rary')])
+    >>> ew_slogan = slogan.mutate([DEL(5, 4), DEL(17, 4)])
     >>> new_slogan.seq
-    Seq('Colibrary is for  components', Alphabet())
+    Seq('Colib is for components', Alphabet())
     >>> new_slogan.features
-    ComponentFeatureSet([Feature(FeatureLocation(ExactPosition(0), ExactPosition(9)), type='library'),
-                         Feature(FeatureLocation(ExactPosition(19), ExactPosition(29)))])
-    >>>
+    ComponentFeatureSet([Feature(FeatureLocation(ExactPosition(0), ExactPosition(5)), type='name'),
+                         Feature(FeatureLocation(ExactPosition(13), ExactPosition(24)))])
     >>>
     >>> [f.seq for f in new_slogan.features]
-    [Seq('Colibrary', Alphabet()), Seq('components', Alphabet())]
+    [Seq('Colib', Alphabet()), Seq('components', Alphabet())]
 
 
+When a region is affected by a mutation, any features contained in that region are deleted. Features that overlap
+the mutated region are trimmed. Features containing mutations are marked as changed. Features that are not affected by any
+mutation are left as they were---their starting coordinates are rewritten on the fly to map to the coordinate system
+of any inheriting component.
 
-Optimization behind the scenes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+In the sample above, the `type` ``'name'`` feature is resized by the mutation. The sequence of the
+`id` ``'DNA'`` feature is deleted in its entirety and so the feature is deleted too. The feature spanning ``'components'``
+has not changed at all---but the mutations do affect its coordinates and so they are lifted over when the feature
+is accessed from within the mutated component.
 
-Feature annotations that are inherited from another component are not copied over
-in memory --- instead they are looked up on the fly. Only added and removed features are stored. A feature is
-considered changed when its sequence is affected in any way. When a feature is changed, the old feature is removed and
-the new feature is added.
+.. code-block:: python
 
-- On-the-fly coordinate translation of unchanged features is done using :class:`translation.TranslationTable`, inspired
-  by the UCSC's liftOver format.
-- Feature locations are indexed using :class:`interval.IntervalTree`, currently implemented as a BST.
+    >>> new_slogan.features.removed
+    {Feature(FeatureLocation(ExactPosition(0), ExactPosition(9)), type='name'),
+     Feature(FeatureLocation(ExactPosition(17), ExactPosition(20)), id='DNA')}
+    >>> list(new_slogan.features.added)
+    [Feature(FeatureLocation(ExactPosition(0), ExactPosition(5)), type='name')]
 
 
 Feature diffs
 ^^^^^^^^^^^^^
 
-
+:meth:`Component.fdiff` is designed for comparing the features contained in any two components:
 
 .. code-block:: python
 
@@ -108,12 +102,13 @@ Feature diffs
     (Feature(FeatureLocation(ExactPosition(13), ExactPosition(16)), id='DNA'),
      Feature(FeatureLocation(ExactPosition(0), ExactPosition(5)), type='library'))
 
-Internally, these values are stored in ``Component.features.added`` and ``Component.features.removed``.
+
 
 .. note::
 
-    Currently :meth:`Component.fdiff` is only implemented for components that directly inherit from one another.
-
+    :meth:`Component.fdiff` is currently only implemented for components that directly inherit from one another.
+    Internally, these values are looked up from ``Component.features.added`` and ``Component.features.removed``
+    as shown earlier. Eventually this will work with any two components regardless of ancestry.
 
 Feature search
 ^^^^^^^^^^^^^^
@@ -151,12 +146,25 @@ to match.
     [Feature(FeatureLocation(ExactPosition(7), ExactPosition(8)), type='vowel')]
 
 
+Optimization behind the scenes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Feature annotations that are inherited from another component are not copied over
+in memory --- instead they are looked up on the fly. Only added and removed features are stored. A feature is
+considered changed when its sequence is affected in any way. When a feature is changed, the old feature is removed and
+the new feature is added.
+
+- On-the-fly coordinate translation of unchanged features is done using :class:`translation.TranslationTable`---inspired
+  by the UCSC Chain Format.
+- Feature locations are indexed using :class:`interval.IntervalTree`, currently implemented as a BST.
+
+
 Combining components
 --------------------
 
 Multiple components can be combined using :meth:`Component.combine`. This function will either create a `"source"`
 feature annotation for each of the components that are being merged, or copy over all features from all components if
-the keyword-only argument ``copy_features=True`` is set.
+``copy_features=True``.
 
 .. code-block:: python
 
@@ -174,8 +182,34 @@ Strain inheritance
 ------------------
 
 In addition to DNA components, `colib` can track changes in haploid microbial organisms. :class:`HaploidOrganism`
-can track added, changed, or deleted DNA components -- such as chromosomes or plasmids -- and aggregate features
+can track added, changed, or deleted DNA components---such as chromosomes or plasmids---and aggregate features
 contained in the strains.
 
-- example
-- find features in strain
+Strain components
+^^^^^^^^^^^^^^^^^
+
+:meth:`HaploidOrganism.diff` tracks how components have changed across strains:
+
+    >>> from colib.organism import *
+    >>> from colib import *
+    >>>
+    >>> genome = Component('A')
+    >>> alpha = HaploidOrganism('alpha')
+    >>> alpha.set('genome', genome)
+    >>>
+    >>> beta = HaploidOrganism('beta', parent=alpha)
+    >>> beta.set('genome', genome.mutate([Mutation(0, 1, 'B')]))
+    >>> beta.set('plasmid', Component('AGCT'))
+    >>> beta.diff(alpha)
+    Diff(added=(), removed=('plasmid',), changed=('genome',))
+    >>> ~beta.diff(alpha)
+    Diff(added=('plasmid',), removed=(), changed=('genome',))
+
+
+Strain features
+^^^^^^^^^^^^^^^
+
+:attr:`HaploidOrganism.features` returns a :class:`organism.FeatureView` which is a searchable and iterable
+view of all features in all components of a strain.
+
+.. Additionally, :meth:`HaploidOrganism.fdiff` returns added and removed features across all components in a strain.

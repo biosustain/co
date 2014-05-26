@@ -87,7 +87,6 @@ class ComponentTestCase(unittest.TestCase):
 
 
     def test_inherited_search(self):
-
         letters = Component('AABBDDEE', features=[
             SeqFeature(FeatureLocation(0, 1), type='vowel'),
             SeqFeature(FeatureLocation(2, 5), type='consonant'),
@@ -101,6 +100,33 @@ class ComponentTestCase(unittest.TestCase):
 
         self.assertEqual([], list(letters.features.find(type='consonant', between_end=1)))
 
+    def test_inherit_feature_delete(self):
+
+        orig = Component('TTACCCATT', features=[SeqFeature(FeatureLocation(0, 1), type='tt')])
+        f = orig.features.add(FeatureLocation(3, 6), type='ccc')
+
+        self.assertEqual('CCC', str(f.seq))
+
+        mutated = orig.mutate([DEL(3, 3)])
+
+        self.assertEqual('TTAATT', str(mutated.seq))
+        self.assertEqual([Feature(mutated, FeatureLocation(0, 1), type='tt')], list(mutated.features))
+
+    def test_quickstart_feature_inherit(self):
+        slogan = Component('Colibrary is for DNA components', features=[
+                         SeqFeature(FeatureLocation(0, 9), type='library'),
+                         SeqFeature(FeatureLocation(17, 20), id='DNA')])
+
+        self.assertEqual('components', str(slogan.features.add(FeatureLocation(21, 32)).seq))
+        self.assertEqual(['Colibrary', 'DNA', 'components'], [str(f.seq) for f in slogan.features])
+
+        new_slogan = slogan.mutate([DEL(5, 4), DEL(17, 4)])
+
+        self.assertEqual('Colib is for components', str(new_slogan.seq))
+
+        self.assertEqual([Feature(new_slogan, FeatureLocation(0, 5), type='library'),
+                          Feature(new_slogan, FeatureLocation(13, 24))], list(new_slogan.features))
+        self.assertEqual(['Colib', 'components'], [str(f.seq) for f in new_slogan.features])
 
 
     @unittest.SkipTest

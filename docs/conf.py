@@ -18,6 +18,8 @@ import os
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
+from pkg_resources import get_distribution, DistributionNotFound
+
 sys.path.insert(0, os.path.abspath('../colib'))
 
 # Check if deploying to Read the Docs
@@ -62,7 +64,11 @@ copyright = u'2014, Lars Schöning'
 # built documents.
 #
 # The short X.Y version.
-version = '1.0.0'
+try:
+    version = get_distribution('colib').version
+except DistributionNotFound:
+    version = '1.0.0'
+
 # The full version, including alpha/beta/rc tags.
 release = '1.0.0'
 

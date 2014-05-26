@@ -24,10 +24,11 @@ class Component(object):
 
         A unique identifier for this component; preferably either :class:`str` or :class:`UniqueIdentifier`.
 
-
     :param features: A list of additional features (features in addition to those inherited from ``parent``)
     :param removed_features: A list of removed features (features present in ``parent`` or one of its parents,
         but not present in this component)
+    :param mutations: A list of mutations that have been applied to ``parent`` to arrive at ``seq``. The mutations will
+        not be applied to ``seq`` again. Use :meth:`Component.mutate` to mutate a component.
 
     """
     def __init__(self,
@@ -39,12 +40,14 @@ class Component(object):
                  id=None,
                  name=None,
                  description=None,
-                 annotations=None):
+                 annotations=None,
+                 mutations=None):
 
         self.id = id
         self.name = name
         self.description = description
 
+        # --- start of BioPython code ---
         # From SeqRecord.py, Biopython
         # Copyright 2000-2002 Andrew Dalke.
         # Copyright 2002-2004 Brad Chapman.
@@ -59,14 +62,15 @@ class Component(object):
         elif not isinstance(annotations, dict):
             raise TypeError("annotations argument should be a dict")
         self.annotations = annotations
+        # --- end of BioPython code ---
 
         if isinstance(seq, six.text_type):
             seq = Seq(seq)
 
         self._seq = seq
         self._parent = parent
-        self._mutations = ()
-        self._mutations_tt = MutableTranslationTable.from_mutations(seq, self._mutations)
+        self._mutations = mutations or ()
+        self._mutations_tt = MutableTranslationTable.from_mutations(seq, self._mutations).freeze()
         self.features = ComponentFeatureSet(self, feature_class=feature_class)
 
         if features is not None:
@@ -160,6 +164,9 @@ class Component(object):
     def _translate_feature(feature, component, tt=None):
         if tt is None:
             tt = component.tt(feature.component)
+        #
+        # logging.debug('TRANSLATE   {}'.format(feature))
+        # logging.debug('TRANSLATE T  {}'.format(list(enumerate(tt))))
 
         offset = tt[feature.location.start] - feature.location.start
 
@@ -169,7 +176,7 @@ class Component(object):
 
     def mutate(self, mutations, strict=True):
         """
-        Creates a copy of this :class:`Component` and applies all :param:`mutations`.
+        Creates a copy of this :class:`Component` and applies all ``mutations`` in order.
 
         Mutations are applied in order based on the original coordinate system. If ``strict=True`` and multiple
         mutations affect the same area, a :class:`OverlapException` is raised. Otherwise, a :class:`OverlapException`
@@ -181,15 +188,6 @@ class Component(object):
         mutations. For each deleted base, the algorithm tracks the next base to the left and to the right that was
         not deleted.
 
-        *For example:*
-        ::
-
-              ████      ████          ██        ██     ██        ██          ██       ████
-            123  45   123  45    123  45   123  45    123  45   123  45    12345    123  45
-            123xy45   123  -5    123xy45   123  -5    123xy45   123  -5    123-5    123xx45
-            123xy-5   123xy-5    123xy-5   123xy-5    123xy-5   123xy-5      █░       ████
-              ███░      ███░          ░█        ░█     ██        ██
-
         :param strict: If ``True``, will fail if two mutations affect the same sequence.
         :param mutations: ``list`` of :class:`Mutation` objects
         :returns: A mutated :class:`Component`
@@ -197,9 +195,9 @@ class Component(object):
             handle.
 
         """
-        component = Component(seq=self._seq, parent=self)
+        component = Component(seq=self._seq, parent=self)  # TODO use __new__ instead
         features = component.features
-        tt = component._mutations_tt
+        tt = MutableTranslationTable(size=len(self._seq))
 
         sequence = self.seq.tomutable()
 
@@ -242,12 +240,9 @@ class Component(object):
 
             # TODO strict mode implementation that also fires on other overlaps.
 
-            # TODO features.
-            logging.debug('{} {} {}'.format(mutation, mutation.position, mutation.end))
-
             affected_features = features.overlap(mutation.position, mutation.end)
 
-            logging.debug('{} in {} to {} '.format(set(features), mutation.position, mutation.position + mutation.size))
+            logging.debug('{} in {} to {} '.format(set(features), mutation.position, mutation.end))
             logging.debug('affected features: {}'.format(affected_features))
 
             # TODO also search previously affected features and exclude these.
@@ -377,7 +372,8 @@ class Component(object):
     # noinspection PyProtectedMember
     def diff(self, other):
         """
-        Returns the list of mutations that represent the difference between this component and another.
+        Returns a list of mutations that describe the difference between the sequence of this component and
+        ``other``.
         """
         assert isinstance(other, Component)
         if other == self.parent:

@@ -6,22 +6,19 @@ from colib import Component
 
 class Mutation(object):
     """
-    DELINS does not have its own native Mutation class. These are best implemented in
-    third-party libraries or using Mutation directly.
-
     A ``Mutation(start, size, new_sequence)`` is similar to the two derived mutations::
 
         DEL(start, size), INS(start, new_sequence)
-
-    .. note::
-        Mutation are stored as ``(position, size)`` pairs because ``(start, end)`` pairs do not allow for
-        unambiguous zero-length mutations (i.e. insertions). It is possible to simulate an insertion by keeping one
-        character of the original sequence, but that would introduce ambiguity to the exact site of the mutated sequence.
 
     :param int position: start index
     :param int size: length of deletion
     :param new_sequence: insertion sequence
     :type new_sequence: :class:`str`, :class:`Component` or :class:`Bio.Seq`
+
+    .. note::
+        Mutation are stored as ``(position, size)`` pairs because ``(start, end)`` pairs do not allow for
+        unambiguous zero-length mutations (i.e. insertions). It is possible to simulate an insertion by keeping one
+        character of the original sequence, but that would introduce ambiguity to the exact site of the mutated sequence.
 
     .. attribute:: new_sequence
 
