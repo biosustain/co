@@ -64,7 +64,7 @@ class Component(object):
         self.annotations = annotations
         # --- end of BioPython code ---
 
-        if isinstance(seq, six.text_type):
+        if isinstance(seq, six.string_types):
             seq = Seq(seq)
 
         self._seq = seq
