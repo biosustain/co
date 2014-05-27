@@ -1,5 +1,10 @@
+.. |travis| image:: https://travis-ci.org/biosustain/co.svg
+.. _travis: https://travis-ci.org/biosustain/co
+
 Co
 ==
+
+|travis|_
 
 **Co** is a Python library for altering annotated DNA sequences. It keeps track of components and lifts
 over feature annotations when a component is "mutated" by applying a series of mutations. With ``co`` you can
