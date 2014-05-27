@@ -87,15 +87,15 @@ qthelp:
 	      ".qhcp project file in $(BUILDDIR)/qthelp, like this:"
 	@echo "# qcollectiongenerator $(BUILDDIR)/qthelp/colib.qhcp"
 	@echo "To view the help file:"
-	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/colib.qhc"
+	@echo "# assistant -collectionFile $(BUILDDIR)/qthelp/co.qhc"
 
 devhelp:
 	$(SPHINXBUILD) -b devhelp $(ALLSPHINXOPTS) $(BUILDDIR)/devhelp
 	@echo
 	@echo "Build finished."
 	@echo "To view the help file:"
-	@echo "# mkdir -p $$HOME/.local/share/devhelp/colib"
-	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/colib"
+	@echo "# mkdir -p $$HOME/.local/share/devhelp/co"
+	@echo "# ln -s $(BUILDDIR)/devhelp $$HOME/.local/share/devhelp/co"
 	@echo "# devhelp"
 
 epub:

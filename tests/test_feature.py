@@ -2,8 +2,8 @@
 import unittest
 from Bio.SeqFeature import FeatureLocation, SeqFeature
 
-from colib import Component, Feature, FeatureSet
-from colib.mutation import DEL, INS
+from co import Component, Feature, FeatureSet
+from co.mutation import DEL, INS
 
 
 class FeatureTestCase(unittest.TestCase):

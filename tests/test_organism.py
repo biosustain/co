@@ -5,10 +5,10 @@ from Bio.Seq import Seq
 from Bio.SeqFeature import FeatureLocation
 import six
 
-from colib import Component, Feature
-from colib.converters import GenbankConverter, JSONConverter
-from colib.mutation import SNP, Mutation
-from colib.organism import HaploidOrganism
+from co import Component, Feature
+from co.converters import GenbankConverter, JSONConverter
+from co.mutation import SNP, Mutation
+from co.organism import HaploidOrganism
 
 
 class HaploidOrganismTestCase(unittest.TestCase):

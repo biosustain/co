@@ -4,7 +4,7 @@ import logging
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 import sys
 
-from colib.interval import IntervalTree, BaseInterval
+from co.interval import IntervalTree, BaseInterval
 
 class FeatureWrapper(BaseInterval):
     def __init__(self, feature):
@@ -310,7 +310,7 @@ FORWARD_STRAND, REVERSE_STRAND = 1, -1
 
 class Source(object):
     def __init__(self, component, broken=False):
-        from colib import Component
+        from co import Component
         if isinstance(component, Component):
             self._component_ref = weakref.ref(component)
             self._identifier = component.id

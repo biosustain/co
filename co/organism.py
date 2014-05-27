@@ -1,5 +1,5 @@
 import itertools
-from colib.difference import Diff
+from co.difference import Diff
 
 
 class FeatureView(object):

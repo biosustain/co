@@ -2,10 +2,10 @@
 Installation
 ============
 
-Install COLIB using ``pip``:
+Install co using ``pip``:
 
 .. code-block:: shell
 
-    $ pip install colib
+    $ pip install co
 
-COLIB works with Python 2.7.x and Python 3.3+ (recommended).
+Co works with Python 2.7.x and Python 3.3+ (recommended).

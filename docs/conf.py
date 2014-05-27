@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# colib documentation build configuration file, created by
+# co documentation build configuration file, created by
 # sphinx-quickstart on Mon Mar 17 16:34:51 2014.
 #
 # This file is execfile()d with the current directory set to its
@@ -20,7 +20,7 @@ import os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 from pkg_resources import get_distribution, DistributionNotFound
 
-sys.path.insert(0, os.path.abspath('../colib'))
+sys.path.insert(0, os.path.abspath('../co'))
 
 # Check if deploying to Read the Docs
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
@@ -56,8 +56,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'colib'
-copyright = u'2014, Lars Schöning'
+project = u'co'
+copyright = u'2014, Lars Schöning (DTU Biosustain)'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -65,7 +65,7 @@ copyright = u'2014, Lars Schöning'
 #
 # The short X.Y version.
 try:
-    version = get_distribution('colib').version
+    version = get_distribution('co').version
 except DistributionNotFound:
     version = '1.0.0'
 
@@ -197,7 +197,7 @@ html_static_path = ['_static']
 #html_file_suffix = None
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'colibdoc'
+htmlhelp_basename = 'codoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -217,7 +217,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  ('index', 'colib.tex', u'colib Documentation', u'Lars Schöning', 'manual'),
+  ('index', 'co.tex', u'Co Documentation', u'Lars Schöning', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -246,7 +246,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'colib', u'colib Documentation',
+    ('index', 'co', u'Co Documentation',
      [u'Lars Schöning'], 1)
 ]
 
@@ -260,8 +260,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'colib', u'colib Documentation',
-   u'Lars Schöning', 'colib', 'One line description of project.',
+  ('index', 'co', u'Co Documentation',
+   u'Lars Schöning', 'co', 'One line description of project.',
    'Miscellaneous'),
 ]
 

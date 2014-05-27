@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from setuptools import setup, find_packages
 
 setup(
-    name='colib',
+    name='co',
     version='0.1.0',
     packages=find_packages(exclude=['*tests*']),
     url='',

@@ -5,8 +5,8 @@ from Bio.Alphabet import DNAAlphabet
 from Bio.Seq import Seq
 from Bio.SeqFeature import FeatureLocation
 
-from colib import Component
-from colib.converters import GenbankConverter
+from co import Component
+from co.converters import GenbankConverter
 
 
 class GenbankConverterTestCase(unittest.TestCase):

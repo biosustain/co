@@ -3,19 +3,19 @@
 Quickstart
 ==========
 
-.. module:: colib
+.. module:: co
 
 
 Simple mutation
 ---------------
 
 
-To illustrate what :mod:`colib` is designed for, let's begin with a hello world example:
+To illustrate what :mod:`co` is designed for, let's begin with a hello world example:
 
 .. code-block:: python
 
-    >>> from colib import Component
-    >>> from colib.mutations import *
+    >>> from co import Component
+    >>> from co.mutations import *
     >>> hi_x = Component('Hello X!')
     >>> hi_x.seq
     Seq('Hello X!', Alphabet())
@@ -29,7 +29,7 @@ To illustrate what :mod:`colib` is designed for, let's begin with a hello world 
 Mutation types are :class:`Mutation` as well as :class:`INS`,  :class:`DEL`, :class:`SUB` for substitutions, and
 :class:`SNP` for SNPs.
 
-.. module:: colib
+.. module:: co
 .. features
 
 Features & feature inheritance
@@ -43,30 +43,29 @@ attached to a component like so:
 
     >>> from Bio.SeqFeature import *
     >>>
-    >>> slogan = Component('Colibrary is for DNA components', features=[
-    ...                 SeqFeature(FeatureLocation(0, 9), type='name'),
-    ...                 SeqFeature(FeatureLocation(17, 20), id='DNA')])
+    >>> slogan = Component('CoPy is for DNA components', features=[
+    ...                 SeqFeature(FeatureLocation(0, 4), type='name'),
+    ...                 SeqFeature(FeatureLocation(12, 15), id='DNA')])
     >>>
-    >>> slogan.features.add(FeatureLocation(21, 32)).seq
+    >>> slogan.features.add(FeatureLocation(16, 26)).seq
     Seq('components', Alphabet())
     >>> [f.seq for f in slogan.features]
-    [Seq('Colibrary', Alphabet()), Seq('DNA', Alphabet()), Seq('components', Alphabet())]
+    [Seq('CoPy', Alphabet()), Seq('DNA', Alphabet()), Seq('components', Alphabet())]
 
-
-When a component is mutated, :mod:`colib` automatically translates the feature annotations from the parent to
+When a component is mutated, :mod:`co` automatically translates the feature annotations from the parent to
 the new coordinate system:
 
 .. code-block:: python
 
-    >>> new_slogan = slogan.mutate([DEL(5, 4), DEL(17, 4)])
+    >>> new_slogan = slogan.mutate([[DEL(2, 2), DEL(12, 4)])
     >>> new_slogan.seq
-    Seq('Colib is for components', Alphabet())
+    Seq('Co is for components', Alphabet())
     >>> new_slogan.features
-    ComponentFeatureSet([Feature(FeatureLocation(ExactPosition(0), ExactPosition(5)), type='name'),
-                         Feature(FeatureLocation(ExactPosition(13), ExactPosition(24)))])
+    ComponentFeatureSet([Feature(FeatureLocation(ExactPosition(0), ExactPosition(2)), type='name'),
+                         Feature(FeatureLocation(ExactPosition(10), ExactPosition(20)))])
     >>>
     >>> [f.seq for f in new_slogan.features]
-    [Seq('Colib', Alphabet()), Seq('components', Alphabet())]
+    [Seq('Co', Alphabet()), Seq('components', Alphabet())]
 
 
 When a region is affected by a mutation, any features contained in that region are deleted. Features that overlap
@@ -120,7 +119,7 @@ to match.
 
 .. code-block:: python
 
-    >>> from colib import *
+    >>> from co import *
     >>> from Bio.SeqFeature import *
     >>>
     >>> letters = Component('AABBDDEE', features=[
@@ -133,7 +132,7 @@ to match.
     >>> list(letters.features.find(between_start=3))
     [Feature(FeatureLocation(ExactPosition(5), ExactPosition(6)), type='vowel'), Feature(FeatureLocation(ExactPosition(2), ExactPosition(5)), type='consonant')]
     >>>
-    >>> from colib.mutation import *
+    >>> from co.mutation import *
     >>> letters = letters.mutate([INS(4, 'CC')])
     >>> letters.seq
     Seq('AABBCCDDEE', Alphabet())
@@ -174,7 +173,7 @@ feature annotation for each of the components that are being merged, or copy ove
     >>> b.features.add(FeatureLocation(0, 3), id='lib')
     >>> c = Component.combine(a, b, copy_features=True)
     >>> c.seq
-    Seq('CoLib', Alphabet())
+    Seq('co', Alphabet())
     >>> c.features
     ComponentFeatureSet([Feature(FeatureLocation(ExactPosition(2), ExactPosition(5)), id='lib')])
 
@@ -182,7 +181,7 @@ feature annotation for each of the components that are being merged, or copy ove
 Strain inheritance
 ------------------
 
-In addition to DNA components, `colib` can track changes in haploid microbial organisms. :class:`HaploidOrganism`
+In addition to DNA components, `co` can track changes in haploid microbial organisms. :class:`HaploidOrganism`
 can track added, changed, or deleted DNA components---such as chromosomes or plasmids---and aggregate features
 contained in the strains.
 
@@ -191,8 +190,8 @@ Strain components
 
 :meth:`HaploidOrganism.diff` tracks how components have changed across strains:
 
-    >>> from colib.organism import *
-    >>> from colib import *
+    >>> from co.organism import *
+    >>> from co import *
     >>>
     >>> genome = Component('A')
     >>> alpha = HaploidOrganism('alpha')

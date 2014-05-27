@@ -9,9 +9,9 @@ from Bio.SeqFeature import FeatureLocation, SeqFeature
 from Bio.SeqRecord import SeqRecord
 import six
 
-from colib.difference import Diff
-from colib.feature import Feature, ComponentFeatureSet, Source
-from colib.translation import OverlapError, MutableTranslationTable
+from co.difference import Diff
+from co.feature import Feature, ComponentFeatureSet, Source
+from co.translation import OverlapError, MutableTranslationTable
 
 
 class Component(object):

@@ -1,7 +1,7 @@
 import six
 from Bio.Seq import Seq
 
-from colib import Component
+from co import Component
 
 
 class Mutation(object):

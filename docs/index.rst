@@ -1,15 +1,15 @@
-.. colib documentation master file, created by
+.. co documentation master file, created by
    sphinx-quickstart on Mon Mar 17 16:34:51 2014.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-.. module:: colib
+.. module:: co
 
-Welcome to colib's documentation!
+Welcome to Co's documentation!
 =================================
 
-COLIB is a Python library for accessing and altering annotated DNA sequences. It keeps track of components and lifts
-over feature annotations when a component is "mutated" by applying a series of mutations. With :mod:`colib` you can
+**Co** is a Python library for accessing and altering annotated DNA sequences. It keeps track of components and lifts
+over feature annotations when a component is "mutated" by applying a series of mutations. With :mod:`co` you can
 build new consensus sequences for cloned organisms and follow changes to feature annotations within a lineage.
 
 Contents:
@@ -32,7 +32,7 @@ Road map
   better re-sequencing. Versioned components will maintain the relationship to the component's child component. Most
   likely, versions will be hashes of sequences and their mutations.
 - An improved `non-strict` mode with better tolerance for overlapping mutations is planned.
-- As this is a very early release of COLIB, there is a long list of general improvements---they
+- As this is a very early release of co, there is a long list of general improvements---they
   will be developed on demand.
 
 Indices and tables

@@ -1,6 +1,6 @@
 import unittest
 
-from colib.interval import IntervalTree, Interval
+from co.interval import IntervalTree, Interval
 
 
 class IntervalTreeTestCase(unittest.TestCase):
