@@ -32,6 +32,8 @@ Road map
   better re-sequencing. Versioned components will maintain the relationship to the component's child component. Most
   likely, versions will be hashes of sequences and their mutations.
 - An improved `non-strict` mode with better tolerance for overlapping mutations is planned.
+- Cross-referencing between components through ``source`` feature annotations, with use for e.g. parts libraries
+  and BioBricks.
 - As this is a very early release of co, there is a long list of general improvements---they
   will be developed on demand.
 
