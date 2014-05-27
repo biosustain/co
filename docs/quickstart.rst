@@ -58,7 +58,7 @@ the new coordinate system:
 
 .. code-block:: python
 
-    >>> ew_slogan = slogan.mutate([DEL(5, 4), DEL(17, 4)])
+    >>> new_slogan = slogan.mutate([DEL(5, 4), DEL(17, 4)])
     >>> new_slogan.seq
     Seq('Colib is for components', Alphabet())
     >>> new_slogan.features
