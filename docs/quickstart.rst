@@ -15,12 +15,12 @@ To illustrate what :mod:`co` is designed for, let's begin with a hello world exa
 .. code-block:: python
 
     >>> from co import Component
-    >>> from co.mutations import *
-    >>> hi_x = Component('Hello X!')
-    >>> hi_x.seq
+    >>> from co.mutation import *
+    >>> hello = Component('Hello X!')
+    >>> hello.seq
     Seq('Hello X!', Alphabet())
-    >>> hi_world = hi_x.mutate([Mutation(6, 1, 'world')])
-    >>> hi_world.seq
+    >>> hello_world = hello.mutate([Mutation(6, 1, 'world')])
+    >>> hello_world.seq
     Seq('Hello world!', Alphabet())
 
 
@@ -57,7 +57,7 @@ the new coordinate system:
 
 .. code-block:: python
 
-    >>> new_slogan = slogan.mutate([[DEL(2, 2), DEL(12, 4)])
+    >>> new_slogan = slogan.mutate([DEL(2, 2), DEL(12, 4)])
     >>> new_slogan.seq
     Seq('Co is for components', Alphabet())
     >>> new_slogan.features
