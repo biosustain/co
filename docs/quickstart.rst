@@ -24,11 +24,6 @@ To illustrate what :mod:`co` is designed for, let's begin with a hello world exa
     Seq('Hello world!', Alphabet())
 
 
-.. module:: mutation
-
-Mutation types are :class:`Mutation` as well as :class:`INS`,  :class:`DEL`, :class:`SUB` for substitutions, and
-:class:`SNP` for SNPs.
-
 .. module:: co
 .. features
 
@@ -125,7 +120,7 @@ to match.
     >>> letters = Component('AABBDDEE', features=[
     ...             SeqFeature(FeatureLocation(0, 1), type='vowel'),
     ...             SeqFeature(FeatureLocation(2, 5), type='consonant'),
-    ...             SeqFeature(FeatureLocation(5, 6), type='vowel', qualifiers={'test': 'yes'})])
+    ...             SeqFeature(FeatureLocation(5, 6), type='vowel', qualifiers={'gene': 'abcD'})])
     >>>
     >>> list(letters.features.find(type='vowel'))
     [Feature(FeatureLocation(ExactPosition(0), ExactPosition(1)), type='vowel'), Feature(FeatureLocation(ExactPosition(5), ExactPosition(6)), type='vowel')]
@@ -142,7 +137,7 @@ to match.
     [Feature(FeatureLocation(ExactPosition(0), ExactPosition(1)), type='vowel'), Feature(FeatureLocation(ExactPosition(7), ExactPosition(8)), type='vowel')]
     >>> list(letters.features.find(type='consonant', between_end=1))
     []
-    >>> list(letters.features.find(test='yes'))
+    >>> list(letters.features.find(gene='abcD'))
     [Feature(FeatureLocation(ExactPosition(7), ExactPosition(8)), type='vowel')]
 
 
@@ -169,13 +164,13 @@ feature annotation for each of the components that are being merged, or copy ove
 .. code-block:: python
 
     >>> a = Component('Co')
-    >>> b = Component('Lib')
-    >>> b.features.add(FeatureLocation(0, 3), id='lib')
+    >>> b = Component('Py')
+    >>> b.features.add(FeatureLocation(0, 3), id='python')
     >>> c = Component.combine(a, b, copy_features=True)
     >>> c.seq
-    Seq('co', Alphabet())
+    Seq('CoPy', Alphabet())
     >>> c.features
-    ComponentFeatureSet([Feature(FeatureLocation(ExactPosition(2), ExactPosition(5)), id='lib')])
+    ComponentFeatureSet([Feature(FeatureLocation(ExactPosition(2), ExactPosition(5)), id='python')])
 
 
 Strain inheritance
@@ -211,5 +206,3 @@ Strain features
 
 :attr:`HaploidOrganism.features` returns a :class:`organism.FeatureView` which is a searchable and iterable
 view of all features in all components of a strain.
-
-.. Additionally, :meth:`HaploidOrganism.fdiff` returns added and removed features across all components in a strain.
