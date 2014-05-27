@@ -4,7 +4,7 @@ Haploid Organisms
 =================
 
 
-.. automodule:: organism
+.. automodule:: co.organism
    :members:
    :undoc-members:
 

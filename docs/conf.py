@@ -56,7 +56,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'co'
+project = u'Co'
 copyright = u'2014, Lars Schöning (DTU Biosustain)'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -246,7 +246,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'co', u'Co Documentation',
+    ('index', 'Co', u'Co Documentation',
      [u'Lars Schöning'], 1)
 ]
 
@@ -260,7 +260,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'co', u'Co Documentation',
+  ('index', 'Co', u'Co Documentation',
    u'Lars Schöning', 'co', 'One line description of project.',
    'Miscellaneous'),
 ]

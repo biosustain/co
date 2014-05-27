@@ -7,7 +7,7 @@ The :class:`Component` class is very similar to :class:`Bio.SeqRecord.SeqRecord`
 sub-class it---mainly because the ``features`` property is implemented differently.
 
 
-.. automodule:: component
+.. automodule:: co.component
    :members:
    :undoc-members:
 
@@ -17,6 +17,6 @@ Proceed with caution when using the two types interchangeably.
 
 
 
-.. automodule:: feature
+.. automodule:: co.feature
    :members:
 

@@ -3,6 +3,6 @@ Translation helpers
 
 
 
-.. automodule:: translation
+.. automodule:: co.translation
    :members:
    :undoc-members:
