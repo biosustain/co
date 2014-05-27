@@ -19,7 +19,8 @@ setup(
     long_description=read('README.rst'),
     test_suite='nose.collector',
     install_requires=[
-        'biopython>=1.63'
+        'biopython>=1.63',
+        'six>=1.5.2'
     ],
     setup_requires=[
         'nose>=1.1.2',
