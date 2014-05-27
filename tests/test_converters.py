@@ -11,7 +11,7 @@ from co.converters import GenbankConverter
 
 class GenbankConverterTestCase(unittest.TestCase):
     def test_phr332_import(self):
-        filename = 'fixtures/pbr322-sample-sequence.gb'
+        filename = 'tests/fixtures/pbr322-sample-sequence.gb'
 
         component = GenbankConverter.from_file(filename)
 
@@ -51,7 +51,7 @@ class GenbankConverterTestCase(unittest.TestCase):
 
         # GenbankConverter.to_file(component, 'fixtures/MB_1.gb', 'Magic_Brick')
         record = GenbankConverter.to_seq_record(component)
-        self.assertEqual(open('fixtures/MB_1.gb').read(), record.format('genbank'))
+        self.assertEqual(open('tests/fixtures/MB_1.gb').read(), record.format('genbank'))
 
     maxDiff = None
 

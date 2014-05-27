@@ -70,4 +70,5 @@ Authors
 =======
 
 `Lars Schöning <https://github.com/lyschoening>`_ has created Co. Contributions are very welcome.
+Contact the main author for bigger changes.
 

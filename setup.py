@@ -1,10 +1,11 @@
 # coding: utf-8
 from __future__ import unicode_literals
 import os
+import io
 from setuptools import setup, find_packages
 
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    return io.open(os.path.join(os.path.dirname(__file__), fname), encoding='utf-8').read()
 
 setup(
     name='co',
@@ -16,8 +17,12 @@ setup(
     author_email='lays@biosustain.dtu.dk',
     description='Python library for making and tracking mutated copies of DNA components',
     long_description=read('README.rst'),
+    test_suite='nose.collector',
     install_requires=[
         'biopython>=1.63'
+    ],
+    setup_requires=[
+        'nose>=1.1.2',
     ],
     classifiers=[
         'Development Status :: 4 - Beta',
