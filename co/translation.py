@@ -163,8 +163,6 @@ class TranslationTable(object):
 
         """
         s_str, t_str = '', ''
-        logging.debug(self.__dict__)
-
         for s, t in self.alignment():
             s_str += ' {:3d}{}'.format(*s) if s is not None else '   - '
             t_str += ' {:3d}{}'.format(*t) if t is not None else '   - '
@@ -379,10 +377,6 @@ class MutableTranslationTable(TranslationTable):
                     self.chain[i + 1] = (ungapped_remainder, ds, dt)
                     break
                 elif position == gap_start:
-                    # if ds and source_gap or dt and target_gap:
-                    #     logging.debug(self.__dict__)
-                    #     # allow for max one insertion and one deletion per coordinate:
-
                     # (source gap == insertion) an additional insertion is unusual and forbidden in strict mode
                     if strict and ds and source_gap:
                         raise OverlapError('Cannot insert gap at {}: '

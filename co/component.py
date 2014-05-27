@@ -203,9 +203,6 @@ class Component(object):
 
         changed_features = set()
 
-        logging.debug('original features: {}'.format(list(self.features)))
-        logging.debug('new features: {}'.format(list(features)))
-
         # check that all mutations are in range:
         for mutation in mutations:
             if mutation.end > len(self.seq):
@@ -216,9 +213,8 @@ class Component(object):
             # catch strict errors
             # flag features as edited/changed (copies are created as this happens), deleted.
 
-            # FIXME handle addition to end of sequence.
+            # FIXME handle INS at end of sequence.
             # FIXME requires proper handling of r/q_end to find out new size.
-
 
             logging.debug('')
             logging.debug('---> mutation: "%s"', mutation)
@@ -227,7 +223,6 @@ class Component(object):
                 translated_start = tt[mutation.position]
             else:
                 try:
-                    logging.debug(tt.__dict__)
                     translated_start = tt.ge(mutation.position)
                     logging.debug('translated start: nonstrict=%s; strict=%s', translated_start, tt[mutation.position])
                 except IndexError:
@@ -249,7 +244,6 @@ class Component(object):
             # TODO e.g. features = _FeatureSet(component, inherit=self.features)
 
             logging.debug('sequence: "%s"', sequence)
-            logging.debug('alignment: \n%s', tt.alignment_str())
 
             if translated_start is None:
                 raise OverlapError()
@@ -331,8 +325,6 @@ class Component(object):
         component._mutations = tuple(mutations)
         component._mutations_tt = tt
         component.features = features
-
-        logging.debug('\n' + tt.alignment_str())
 
         for feature in changed_features:
             logging.debug('changed: %s', feature)
