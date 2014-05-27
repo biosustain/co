@@ -10,7 +10,7 @@ Welcome to Co's documentation!
 
 **Co** is a Python library for accessing and altering annotated DNA sequences. It keeps track of components and lifts
 over feature annotations when a component is "mutated" by applying a series of mutations. With :mod:`co` you can
-build new consensus sequences for cloned organisms and follow changes to feature annotations within a lineage.
+build new consensus sequences for cloned organisms and trace changes to features within a lineage.
 
 Contents:
 ---------
