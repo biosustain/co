@@ -92,8 +92,8 @@ class HaploidOrganism(object):
         other_names = set(other.components.keys())
 
         return Diff(
-            added=other_names - names,
-            removed=names - other_names,
+            added=names - other_names,
+            removed=other_names - names,
             changed=(name for name in names & other_names if self.components[name] != other.components[name]))
 
     def fdiff(self, other):

@@ -196,9 +196,9 @@ Strain components
     >>> beta.set('genome', genome.mutate([Mutation(0, 1, 'B')]))
     >>> beta.set('plasmid', Component('AGCT'))
     >>> beta.diff(alpha)
-    Diff(added=(), removed=('plasmid',), changed=('genome',))
-    >>> ~beta.diff(alpha)
     Diff(added=('plasmid',), removed=(), changed=('genome',))
+    >>> ~beta.diff(alpha)
+    Diff(added=(), removed=('plasmid',), changed=('genome',))
 
 
 Strain features

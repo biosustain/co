@@ -7,6 +7,7 @@ import six
 
 from co import Component, Feature
 from co.converters import GenbankConverter, JSONConverter
+from co.difference import Diff
 from co.mutation import SNP, Mutation
 from co.organism import HaploidOrganism
 
@@ -64,6 +65,7 @@ class HaploidOrganismTestCase(unittest.TestCase):
 
         genome_fdiff = new_strain.components['genome'].fdiff(strain.components['genome'])
         self.assertEqual(set(genome.features), set(genome_fdiff.removed))  # all features removed/changed
+        self.assertEqual(Diff(changed=['genome']), new_strain.diff(strain))
 
         print(set(genome_fdiff.added))
 
