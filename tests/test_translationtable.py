@@ -1,9 +1,8 @@
 import logging
 import unittest
 
-from co import MutableTranslationTable
 from co.mutation import DEL, INS
-from co.translation import OverlapError
+from co.translation import MutableTranslationTable, OverlapError
 
 
 class TranslationTableTestCase(unittest.TestCase):
