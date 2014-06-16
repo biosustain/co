@@ -4,7 +4,7 @@ Installation
 
 Install co using ``pip``:
 
-.. code-block:: shell
+.. code-block:: bash
 
     $ pip install co
 

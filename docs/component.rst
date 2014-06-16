@@ -9,16 +9,14 @@ The :class:`Component` class is very similar to :class:`Bio.SeqRecord.SeqRecord`
 sub-class it---mainly because the ``features`` property is implemented differently.
 
 
-.. automodule:: co
-   :members: Component
-   :undoc-members:
-
+.. autoclass:: Component
 
 The :class:`Feature` class inherits from :class:`Bio.SeqFeature.SeqFeature` but stores some additional information.
 Proceed with caution when using the two types interchangeably.
 
+.. autoclass:: Feature
 
+.. autoclass:: FeatureSet
 
-.. automodule:: co
-   :members: Feature, FeatureSet, ComponentFeatureSet
+.. autoclass:: ComponentFeatureSet
 
