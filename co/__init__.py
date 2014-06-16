@@ -1,6 +1,5 @@
 from co.component import Component
 from co.feature import Feature, Source, FeatureSet, ComponentFeatureSet, FORWARD_STRAND, REVERSE_STRAND
-from co.translation import TranslationTable, MutableTranslationTable
 
 __all__ = (
     'Component',
@@ -10,6 +9,7 @@ __all__ = (
     'ComponentFeatureSet',
     'FORWARD_STRAND',
     'REVERSE_STRAND',
-    'TranslationTable',
-    'MutableTranslationTable',
+    'organism',
+    'mutation',
+    'translation',
 )

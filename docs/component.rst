@@ -3,14 +3,14 @@
 Components & Features
 =====================
 
-.. module:: co.component
+.. module:: co
 
 The :class:`Component` class is very similar to :class:`Bio.SeqRecord.SeqRecord`, but does not currently
 sub-class it---mainly because the ``features`` property is implemented differently.
 
 
-.. automodule:: co.component
-   :members:
+.. automodule:: co
+   :members: Component
    :undoc-members:
 
 
@@ -19,6 +19,6 @@ Proceed with caution when using the two types interchangeably.
 
 
 
-.. automodule:: co.feature
-   :members:
+.. automodule:: co
+   :members: Feature, FeatureSet, ComponentFeatureSet
 
