@@ -39,17 +39,6 @@ def node_traverse(node):
         yield i
 
 
-def node_insert(node, data):
-    if node is None:
-        return IntervalNode(data)
-    if data == node.data:  # FIXME replaces original node.
-        return IntervalNode(data, left=node.left, right=node.right)
-    if data < node.data:
-        return IntervalNode(node.data, left=node_insert(node.left, data), right=node.right)
-    else:
-        return IntervalNode(node.data, left=node.left, right=node_insert(node.right, data))
-
-
 class IntervalTree(object):
     """
 
@@ -62,7 +51,24 @@ class IntervalTree(object):
         self.size = 0
 
     def add(self, interval):
-        self.root = node_insert(self.root, interval)
+        if self.root is None:
+            self.root = IntervalNode(interval)
+        else:
+            current = self.root
+            while True:
+                if interval < current.data:
+                    if current.left:
+                        current = current.left
+                    else:
+                        current.left = IntervalNode(interval)
+                        break
+                else:
+                    if current.right:
+                        current = current.right
+                    else:
+                        current.right = IntervalNode(interval)
+                        break
+
         self.size += 1  # FIXME since original node might be replaced, size will not necessarily change.
 
     def copy(self):
