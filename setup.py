@@ -9,7 +9,7 @@ def read(fname):
 
 setup(
     name='co',
-    version='0.1.1',
+    version='0.1.2',
     packages=find_packages(exclude=['*tests*']),
     url='http://co.readthedocs.org/en/latest/',
     license='MIT',
