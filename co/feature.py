@@ -260,7 +260,7 @@ class ComponentFeatureSet(FeatureSet):
         """
         Return the set of features added to this component, excluding any inherited features.
         """
-        return self._features
+        return sorted([f.data for f in self._features])
 
     @property
     def removed(self):
