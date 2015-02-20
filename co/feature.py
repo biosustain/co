@@ -112,19 +112,20 @@ class FeatureSet(object):
         if start > end:
             raise RuntimeError("start cannot be larger than end.")
 
-        for f in  sorted(self._features.search(start, end+1)):
-            if isinstance(f, Interval):
-                yield f.data
-            else:
-                yield f
+        for f in sorted(self._features.search(start, end+1)):
+            yield f.data
 
     def difference(self, other):
-        assert isinstance(other, FeatureSet)
-        return self._features - other._features
+        if isinstance(other, FeatureSet):
+            return self._features - other._features
+        else:
+            return self._features - other
 
     def union(self, other):
-        assert isinstance(other, FeatureSet)
-        return self._features | other._features
+        if isinstance(other, FeatureSet):
+            return self._features | other._features
+        else:
+            return self._features | other
 
 
 class Feature(SeqFeature):
@@ -242,7 +243,7 @@ class ComponentFeatureSet(FeatureSet):
         if self.parent_feature_set:  # NOTE: this is where caching should kick in on any inherited implementation.
             keep_features = (f for f in self.parent_feature_set if f not in self.removed_features)
             translated_features = (self.component._translate_feature(f, self.component) for f in keep_features)
-            return heapq.merge(set([f.data for f in self._features]), translated_features)
+            return heapq.merge({f.data for f in self._features}, translated_features)
         else:
             return super(ComponentFeatureSet, self).__iter__()
 
@@ -260,7 +261,8 @@ class ComponentFeatureSet(FeatureSet):
         """
         Return the set of features added to this component, excluding any inherited features.
         """
-        return sorted([f.data for f in self._features])
+        for f in sorted(self._features):
+            yield f.data
 
     @property
     def removed(self):
