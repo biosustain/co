@@ -112,20 +112,19 @@ class FeatureSet(object):
         if start > end:
             raise RuntimeError("start cannot be larger than end.")
 
-        for f in sorted(self._features.search(start, end+1)):
+        for f in sorted(self._features.search(start, end + 1)):
             yield f.data
 
     def difference(self, other):
-        if isinstance(other, FeatureSet):
-            return self._features - other._features
-        else:
-            return self._features - other
+        fs = self.copy()
+        fs._features = self._features - other._features
+        return fs
 
     def union(self, other):
-        if isinstance(other, FeatureSet):
-            return self._features | other._features
-        else:
-            return self._features | other
+        fs = self.copy()
+        fs._features = self._features | other._features
+        return fs
+
 
 
 class Feature(SeqFeature):
@@ -261,8 +260,7 @@ class ComponentFeatureSet(FeatureSet):
         """
         Return the set of features added to this component, excluding any inherited features.
         """
-        for f in sorted(self._features):
-            yield f.data
+        return sorted(f.data for f in self._features)
 
     @property
     def removed(self):
