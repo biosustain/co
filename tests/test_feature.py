@@ -66,7 +66,7 @@ class FeatureSetTestCase(unittest.TestCase):
     def test_iter(self):
         fs = FeatureSet()
         f1 = fs.add(FeatureLocation(20, 30), type='misc')
-        f2 = fs.add(FeatureLocation(5, 5, strand=-1), type='CDS')
+        f2 = fs.add(FeatureLocation(5, 6, strand=-1), type='CDS')
         f3 = fs.add(FeatureLocation(0, 10), type='promoter')
         f4 = fs.add(FeatureLocation(30, 40), type='promoter')
 
@@ -75,7 +75,7 @@ class FeatureSetTestCase(unittest.TestCase):
     def test_remove(self):
         fs = FeatureSet()
         f1 = fs.add(FeatureLocation(20, 30), type='misc')
-        f2 = fs.add(FeatureLocation(5, 5, strand=-1), type='CDS')
+        f2 = fs.add(FeatureLocation(5, 6, strand=-1), type='CDS')
         f3 = fs.add(FeatureLocation(0, 10), type='promoter')
         fs.remove(f2)
 
@@ -84,7 +84,7 @@ class FeatureSetTestCase(unittest.TestCase):
     def test_find(self):
         fs = FeatureSet()
         f1 = fs.add(FeatureLocation(20, 30), type='misc')
-        f2 = fs.add(FeatureLocation(5, 5, strand=-1), type='CDS', id='y')
+        f2 = fs.add(FeatureLocation(5, 6, strand=-1), type='CDS', id='y')
         f3 = fs.add(FeatureLocation(0, 10), type='promoter', id='x')
         f4 = fs.add(FeatureLocation(30, 40), type='promoter', qualifiers={'gene': 'abcD'})
 

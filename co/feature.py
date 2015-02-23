@@ -4,19 +4,7 @@ import logging
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 import sys
 
-from co.interval import IntervalTree, BaseInterval
-
-class FeatureWrapper(BaseInterval):
-    def __init__(self, feature):
-        self.feature = feature
-
-    @property
-    def start(self):
-        return self.feature.location.start
-
-    @property
-    def end(self):
-        return self.feature.location.end
+from intervaltree import IntervalTree, Interval
 
 
 class FeatureSet(object):
@@ -43,21 +31,19 @@ class FeatureSet(object):
         return len(self._features)
 
     def __iter__(self):
-        for f in self._features:
-            if isinstance(f, FeatureWrapper):
-                yield f.feature
-            else:
-                yield f
+        for f in sorted(self._features):
+            yield f.data
 
     def __repr__(self):
         return '{}({})'.format(self.__class__.__name__, list(self))
 
-    @staticmethod
-    def _wrap_feature(feature):
-        if isinstance(feature, BaseInterval):
-            return feature
+    def _wrap_feature(self, feature):
+        if isinstance(feature, SeqFeature):
+            return Interval(feature.location.start, feature.location.end, feature)
+        elif isinstance(feature, (self._feature_class, Feature)):
+            return Interval(feature.start, feature.end, feature)
         else:
-            return FeatureWrapper(feature)
+            raise ValueError("feature must be one of Bio.SeqFeature, co.Feature, %s" % self._feature_class)
 
     def copy(self):
         """
@@ -126,26 +112,21 @@ class FeatureSet(object):
         if start > end:
             raise RuntimeError("start cannot be larger than end.")
 
-        for f in self._features.find_overlapping(start, end):
-            if isinstance(f, FeatureWrapper):
-                yield f.feature
-            else:
-                yield f
+        for f in sorted(self._features.search(start, end + 1)):
+            yield f.data
 
     def difference(self, other):
         fs = self.copy()
-        for f in other:
-            fs._features.remove(f)
+        fs._features = self._features - other._features
         return fs
 
     def union(self, other):
         fs = self.copy()
-        for f in other:
-            fs.add(f)
+        fs._features = self._features | other._features
         return fs
 
 
-class Feature(SeqFeature, BaseInterval):
+class Feature(SeqFeature):
     """
     :class:`Feature` derives from :class:`SeqFeature` and binds to a particular
     :class:`Component`. :class:`Feature` does not support the ``sub_features`` argument. All other
@@ -159,8 +140,7 @@ class Feature(SeqFeature, BaseInterval):
 
         self.source = kwargs.pop('source', None)
         self.component = component
-
-        super(Feature, self).__init__(*args, **kwargs)
+        SeqFeature.__init__(self, *args, **kwargs)
 
     def __hash__(self):
         return hash((self.location.start, self.location.end, self.type))
@@ -215,6 +195,24 @@ class Feature(SeqFeature, BaseInterval):
         """
         return self.location.end
 
+    def __lt__(self, other):
+        if self.start < other.start:
+            return True
+        if self.start > other.start:
+            return False
+        if self.end < other.end:
+            return True
+        return False
+
+    def __gt__(self, other):
+        if self.start > other.start:
+            return True
+        if self.start < other.start:
+            return False
+        if self.end > other.end:
+            return True
+        return False
+
 
 class ComponentFeatureSet(FeatureSet):
     """
@@ -243,13 +241,13 @@ class ComponentFeatureSet(FeatureSet):
         if self.parent_feature_set:  # NOTE: this is where caching should kick in on any inherited implementation.
             keep_features = (f for f in self.parent_feature_set if f not in self.removed_features)
             translated_features = (self.component._translate_feature(f, self.component) for f in keep_features)
-            return heapq.merge(self._features, translated_features)
+            return heapq.merge({f.data for f in self._features}, translated_features)
         else:
             return super(ComponentFeatureSet, self).__iter__()
 
     def add(self, location, *args, **kwargs):
         if isinstance(location, self._feature_class):
-            self._features.add(location)
+            self._features.add(self._wrap_feature(location))
             return location
         else:
             if self._feature_class == Feature:
@@ -261,7 +259,7 @@ class ComponentFeatureSet(FeatureSet):
         """
         Return the set of features added to this component, excluding any inherited features.
         """
-        return self._features
+        return sorted(f.data for f in self._features)
 
     @property
     def removed(self):

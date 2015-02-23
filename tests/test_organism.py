@@ -67,8 +67,6 @@ class HaploidOrganismTestCase(unittest.TestCase):
         self.assertEqual(set(genome.features), set(genome_fdiff.removed))  # all features removed/changed
         self.assertEqual(Diff(changed=['genome']), new_strain.diff(strain))
 
-        print(set(genome_fdiff.added))
-
         self.assertEqual({
                              Feature(new_genome, FeatureLocation(0, 25), type="a"),
                              Feature(new_genome, FeatureLocation(52, 56), type="g"),

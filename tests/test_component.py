@@ -85,7 +85,6 @@ class ComponentTestCase(unittest.TestCase):
         self.assertEqual(False, generation3.inherits_from(other))
         self.assertEqual([generation2, generation1], list(generation3.get_lineage()))
 
-
     def test_inherited_search(self):
         letters = Component('AABBDDEE', features=[
             SeqFeature(FeatureLocation(0, 1), type='vowel'),
@@ -96,7 +95,8 @@ class ComponentTestCase(unittest.TestCase):
 
         self.assertEqual('AABBCCDDEE', str(letters.seq))
         self.assertEqual([Feature(letters, FeatureLocation(0, 1), type='vowel'),
-                          Feature(letters, FeatureLocation(7, 8), type='vowel')], list(letters.features.find(type='vowel')))
+                          Feature(letters, FeatureLocation(7, 8), type='vowel')],
+                         list(letters.features.find(type='vowel')))
 
         self.assertEqual([], list(letters.features.find(type='consonant', between_end=1)))
 

@@ -20,7 +20,8 @@ setup(
     test_suite='nose.collector',
     install_requires=[
         'biopython>=1.63',
-        'six>=1.5.2'
+        'six>=1.5.2',
+        'intervaltree>=2.0.4'
     ],
     setup_requires=[
         'nose>=1.1.2',
