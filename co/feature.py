@@ -117,22 +117,12 @@ class FeatureSet(object):
 
     def difference(self, other):
         fs = self.copy()
-        if isinstance(other, FeatureSet):
-            fs._features = self._features - other._features
-        elif isinstance(other, set):
-            fs._features = self._features - other
-        else:
-            raise ValueError("Cannot compute the difference between FeatureSet and %s" % type(other))
+        fs._features = self._features - other._features
         return fs
 
     def union(self, other):
         fs = self.copy()
-        if isinstance(other, FeatureSet):
-            fs._features = self._features | other._features
-        elif isinstance(other, set):
-            fs._features = self._features | other
-        else:
-            raise ValueError("Cannot compute the union between FeatureSet and %s" % type(other))
+        fs._features = self._features | other._features
         return fs
 
 
