@@ -176,7 +176,7 @@ class Component(object):
     def _reallocate(self, feature, start, stop):
         return feature._move(start, stop)
 
-    def mutate(self, mutations, strict=True, reposition_func=None, ):
+    def mutate(self, mutations, strict=True, reposition_func=None):
         """
         Creates a copy of this :class:`Component` and applies all ``mutations`` in order.
 
