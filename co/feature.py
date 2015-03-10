@@ -251,7 +251,7 @@ class ComponentFeatureSet(FeatureSet):
         if self.parent_feature_set:  # NOTE: this is where caching should kick in on any inherited implementation.
             keep_features = (f for f in self.parent_feature_set if f not in self.removed_features)
             translated_features = (self.component._translate_feature(f, self.component) for f in keep_features)
-            return heapq.merge({f.data for f in self._features}, translated_features)
+            return heapq.merge(sorted(f.data for f in self._features), sorted(translated_features))
         else:
             return super(ComponentFeatureSet, self).__iter__()
 

@@ -65,9 +65,7 @@ class Mutation(object):
         """
         Computed end coordinate of the deletion. Use with caution.
         """
-        if self.size in (0, 1):
-            return self.position
-        return self.position + self.size - 1
+        return self.position + self.size
 
     @property
     def new_size(self):
