@@ -487,3 +487,8 @@ class MutableTranslationTable(TranslationTable):
         :raises OverlapError: in various edge cases involving overlapping mutations, particularly in `strict` mode.
         """
         self._insert_gap(position, size, size, strict)
+
+
+def shift_feature_location(tt, location):
+    offset = tt[location.start] - location.start
+    return location._shift(offset)

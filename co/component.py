@@ -6,12 +6,16 @@ from Bio.Seq import Seq
 import operator
 from Bio.SeqFeature import FeatureLocation, SeqFeature
 from Bio.SeqRecord import SeqRecord
+from intervaltree import IntervalTree
+import itertools
 import six
 
 from co.difference import Diff
 from co.feature import Feature, ComponentFeatureSet
-from co.translation import OverlapError, MutableTranslationTable
+from co.translation import OverlapError, MutableTranslationTable, shift_feature_location
 
+
+# logging.basicConfig(level=logging.DEBUG)
 
 class Component(object):
     """
@@ -139,7 +143,7 @@ class Component(object):
             offset = 0
             for component in components:
                 for feature in component.features:
-                    combined.features.add(feature._shift(offset)) #move(offset + feature.position, component=combined))
+                    combined.features.add(Feature.translate(feature, offset, combined)) #move(offset + feature.position, component=combined))
                 offset += len(component)
         else:
             offset = 0
@@ -159,24 +163,22 @@ class Component(object):
     def parent(self):
         return self._parent
 
-    @staticmethod
-    def _translate_feature(feature, component, tt=None):
-        if tt is None:
-            tt = component.tt(feature.component)
-        #
-        # logging.debug('TRANSLATE   {}'.format(feature))
-        # logging.debug('TRANSLATE T  {}'.format(list(enumerate(tt))))
+    # @staticmethod
+    # def _translate_feature(feature, component, tt=None):
+    #     if tt is None:
+    #         tt = component.tt(feature.component)
+    #     #
+    #     # logging.debug('TRANSLATE   {}'.format(feature))
+    #     # logging.debug('TRANSLATE T  {}'.format(list(enumerate(tt))))
+    #
+    #     offset = tt[feature.location.start] - feature.location.start
+    #
+    #     # FIXME does not include ref and ref_db!
+    #     # TODO create a "broken reference" object and re-attach here
+    #     return feature._shift(offset, component)
 
-        offset = tt[feature.location.start] - feature.location.start
 
-        # FIXME does not include ref and ref_db!
-        # TODO create a "broken reference" object and re-attach here
-        return feature._shift(offset, component)
-
-    def _reallocate(self, feature, start, stop):
-        return feature._move(start, stop)
-
-    def mutate(self, mutations, strict=True, reposition_func=None, ):
+    def mutate(self, mutations, strict=True, transform=None):
         """
         Creates a copy of this :class:`Component` and applies all ``mutations`` in order.
 
@@ -197,17 +199,19 @@ class Component(object):
             handle.
 
         """
-
-        if reposition_func is None:
-            reposition_func = self._reallocate
+        if transform is None:
+            transform = Feature.transform
 
         component = Component(seq=self._seq, parent=self)  # TODO use __new__ instead
         features = component.features
+
         tt = MutableTranslationTable(size=len(self._seq))
 
         sequence = self.seq.tomutable()
 
-        changed_features = set()
+        changed_features = IntervalTree()
+
+        # TODO check that mutations do not overlap
 
         # check that all mutations are in range:
         for mutation in mutations:
@@ -227,7 +231,7 @@ class Component(object):
 
             if strict:
                 translated_start = tt[mutation.position]
-            else:
+            else:  # TODO get rid of non-strict mode
                 try:
                     translated_start = tt.ge(mutation.position)
                     logging.debug('translated start: nonstrict=%s; strict=%s', translated_start, tt[mutation.position])
@@ -257,35 +261,36 @@ class Component(object):
             logging.debug('new features: {}'.format(list(features)))
             logging.info('features in mutation: {}'.format(affected_features))
 
-            for feature in affected_features | changed_features:
+            for feature_start, feature_end, feature in itertools.chain(
+                    changed_features.search(mutation.start, mutation.end + 1), # process these first, as we are adding to changed features in second step
+                    ((feature.start, feature.end, feature) for feature in affected_features)):
+                assert not (feature_end < mutation.start or feature_start > mutation.end)
+
                 logging.info('{} with sequence "{}" affected by {}.'.format(feature, feature.seq, mutation))
 
-                if feature.end < mutation.start or feature.start > mutation.end:
-                    continue
-
+                # TODO move this into a previous loop:
                 try:
-                    changed_features.remove(feature)
-                except KeyError:
+                    changed_features.removei(feature_start, feature_end, feature)
+                except ValueError:
                     features.remove(feature)
 
-                if mutation.start > feature.start:
-                    if mutation.end < feature.end or mutation.size == 0:  # mutation properly contained in feature.
+                if mutation.start > feature_start:
+                    if mutation.end < feature_end or mutation.size == 0:  # mutation properly contained in feature.
                         logging.debug('FMMF from {} to {}({})'.format(
-                            feature.start,  # tt.ge(feature.start),
-                            feature.end,  # tt.le(feature.end),
-                            feature.end - mutation.size + mutation.new_size))
+                            feature_start,  # tt.ge(feature.start),
+                            feature_end,  # tt.le(feature.end),
+                            feature_end - mutation.size + mutation.new_size))
 
-                        changed_features.add(reposition_func(feature, feature.start,
-                                                             feature.end - mutation.size + mutation.new_size))
+                        changed_features.addi(feature_start,
+                                              feature_end - mutation.size + mutation.new_size,
+                                              feature)
                     else:
-                        logging.debug('FMFM from {} to {}'.format(tt[feature.start], tt[mutation.start - 1]))
-
-                        changed_features.add(reposition_func(feature, feature.start, mutation.start))
+                        logging.debug('FMFM from {} to {}'.format(tt[feature_start], tt[mutation.start - 1]))
+                        changed_features.addi(feature_start, mutation.start, feature)
                 else:  # if mutation.start >= feature.start
-                    if mutation.end < feature.end:
-                        logging.debug('MFMF from {} to {}'.format(tt[mutation.end], tt[feature.end-1]))
-
-                        changed_features.add(reposition_func(feature, mutation.end, feature.end))
+                    if mutation.end < feature_end:
+                        logging.debug('MFMF from {} to {}'.format(tt[mutation.end], tt[feature_end-1]))
+                        changed_features.addi(mutation.end, feature_end, feature)
 
             logging.debug('applying mutation: at %s("%s") translating from %s("%s") delete %s bases and insert "%s"',
                           translated_start,
@@ -323,9 +328,12 @@ class Component(object):
         component._mutations_tt = tt
         component.features = features
 
-        for feature in changed_features:
+        for new_start, new_end, feature in changed_features:
+            new_location = FeatureLocation(new_start, new_end, strand=feature.location.strand)
+            new_location = shift_feature_location(tt, new_location)
+
             logging.debug('changed: %s', feature)
-            translated_feature = self._translate_feature(feature, component, tt)
+            translated_feature = transform(feature, new_location, component)
             features.add(translated_feature)
 
             logging.debug('translating %s: %s(%s) "%s" -> %s(%s) "%s"',

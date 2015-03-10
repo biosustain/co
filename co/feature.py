@@ -165,23 +165,24 @@ class Feature(SeqFeature):
                self.ref == other.ref and \
                self.ref_db == other.ref_db
 
-    def _move_to_location(self, location, component=None):
+    @classmethod
+    def transform(cls, feature, location, component):
         return Feature(location=location,
-                       component=component or self.component,
-                       type=self.type,
-                       location_operator=self.location_operator,
-                       id=self.id,
-                       qualifiers=dict(self.qualifiers.items()))
-
+                       component=component or feature.component,
+                       type=feature.type,
+                       location_operator=feature.location_operator,
+                       id=feature.id,
+                       qualifiers=dict(feature.qualifiers.items()))
         # TODO refs?
 
-    def _move(self, start, end):
-        # TODO ref
-        new_location = FeatureLocation(start, end, strand=self.location.strand)
-        return self._move_to_location(new_location)
-
-    def _shift(self, offset, component=None):
-        return self._move_to_location(self.location._shift(offset), component)
+    @classmethod
+    def translate(cls, feature, offset, component=None):
+        return Feature(location=feature.location._shift(offset),
+                       component=component or feature.component,
+                       type=feature.type,
+                       location_operator=feature.location_operator,
+                       id=feature.id,
+                       qualifiers=dict(feature.qualifiers.items()))
 
     @property
     def seq(self):
@@ -350,7 +351,7 @@ class ComponentFeatureSet(FeatureSet):
 
     def overlap(self, start, end, include_inherited=True):
         """
-        Returns an iterator over all features in the collection that overlap the given range.
+        Returns a set of all features in the collection that overlap the given range.
 
         :param int start: overlap region start
         :param int end: overlap region end
