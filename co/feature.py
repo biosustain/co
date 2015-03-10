@@ -224,6 +224,68 @@ class Feature(SeqFeature):
         return False
 
 
+class FeatureProxy(object):
+
+    def __init__(self, feature, component):
+        if isinstance(feature, FeatureProxy):
+            self._feature = feature.feature
+            self._component = feature.origin
+        else:
+            self._feature = feature
+            self._component = component
+
+        if self._feature.component == component:
+            self.location = feature.location
+        else:
+            self.location = self._translate_location(feature, component)
+
+    def __getattr__(self, item):
+        return getattr(self.feature, item)
+
+    def __lt__(self, other):
+        if self.start < other.start:
+            return True
+        if self.start > other.start:
+            return False
+        if self.end < other.end:
+            return True
+        return False
+
+    def __gt__(self, other):
+        if self.start > other.start:
+            return True
+        if self.start < other.start:
+            return False
+        if self.end > other.end:
+            return True
+        return False
+
+    @staticmethod
+    def _translate_location(feature, component, tt=None):
+        if tt is None:
+            tt = component.tt(feature.component)
+
+        offset = tt[feature.location.start] - feature.location.start
+        return feature.location._shift(offset)
+
+    @property
+    def feature(self):
+        return self._feature
+
+    @property
+    def origin(self):
+        return self._feature.component
+
+    @property
+    def start(self):
+        return self.location.start
+
+    @property
+    def end(self):
+        return self.location.end
+
+
+
 class ComponentFeatureSet(FeatureSet):
     """
     An extended version of :class:`FeatureSet` that binds to a :class:`Component` and inherits from any
@@ -250,7 +312,7 @@ class ComponentFeatureSet(FeatureSet):
     def __iter__(self):
         if self.parent_feature_set:  # NOTE: this is where caching should kick in on any inherited implementation.
             keep_features = (f for f in self.parent_feature_set if f not in self.removed_features)
-            translated_features = (self.component._translate_feature(f, self.component) for f in keep_features)
+            translated_features = (FeatureProxy(f, self.component) for f in keep_features)
             return heapq.merge(sorted(f.data for f in self._features), sorted(translated_features))
         else:
             return super(ComponentFeatureSet, self).__iter__()
