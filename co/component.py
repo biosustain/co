@@ -261,18 +261,21 @@ class Component(object):
             logging.debug('new features: {}'.format(list(features)))
             logging.info('features in mutation: {}'.format(affected_features))
 
-            for feature_start, feature_end, feature in itertools.chain(
+            for interval in itertools.chain(
                     changed_features.search(mutation.start, mutation.end + 1), # process these first, as we are adding to changed features in second step
-                    ((feature.start, feature.end, feature) for feature in affected_features)):
-                assert not (feature_end < mutation.start or feature_start > mutation.end)
-
-                logging.info('{} with sequence "{}" affected by {}.'.format(feature, feature.seq, mutation))
+                    affected_features):
+                assert not (interval.end < mutation.start or interval.start > mutation.end)
 
                 # TODO move this into a previous loop:
                 try:
-                    changed_features.removei(feature_start, feature_end, feature)
+                    changed_features.remove(interval)
+                    feature = interval.data
                 except ValueError:
+                    feature = interval
                     features.remove(feature)
+
+                feature_start = interval.start
+                feature_end = interval.end
 
                 if mutation.start > feature_start:
                     if mutation.end < feature_end or mutation.size == 0:  # mutation properly contained in feature.
