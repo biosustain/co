@@ -176,7 +176,7 @@ class Component(object):
     def _reallocate(self, feature, start, stop):
         return feature._move(start, stop)
 
-    def mutate(self, mutations, strict=True, reposition_func=None, translate_function=None):
+    def mutate(self, mutations, strict=True, reposition_func=None, ):
         """
         Creates a copy of this :class:`Component` and applies all ``mutations`` in order.
 
@@ -200,9 +200,6 @@ class Component(object):
 
         if reposition_func is None:
             reposition_func = self._reallocate
-
-        if translate_function is None:
-            translate_function = Component._translate_feature
 
         component = Component(seq=self._seq, parent=self)  # TODO use __new__ instead
         features = component.features
@@ -281,7 +278,7 @@ class Component(object):
                         changed_features.add(reposition_func(feature, feature.start,
                                                              feature.end - mutation.size + mutation.new_size))
                     else:
-                        logging.debug('FMFM from {} to {}'.format( tt[feature.start], tt[mutation.start - 1]))
+                        logging.debug('FMFM from {} to {}'.format(tt[feature.start], tt[mutation.start - 1]))
 
                         changed_features.add(reposition_func(feature, feature.start, mutation.start))
                 else:  # if mutation.start >= feature.start
@@ -328,7 +325,7 @@ class Component(object):
 
         for feature in changed_features:
             logging.debug('changed: %s', feature)
-            translated_feature = translate_function(feature, component, tt)
+            translated_feature = self._translate_feature(feature, component, tt)
             features.add(translated_feature)
 
             logging.debug('translating %s: %s(%s) "%s" -> %s(%s) "%s"',
