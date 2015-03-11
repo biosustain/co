@@ -155,23 +155,24 @@ class Feature(SeqFeature):
                self.ref == other.ref and \
                self.ref_db == other.ref_db
 
-    def _move_to_location(self, location, component=None):
+    @classmethod
+    def transform(cls, feature, location, component):
         return Feature(location=location,
-                       component=component or self.component,
-                       type=self.type,
-                       location_operator=self.location_operator,
-                       id=self.id,
-                       qualifiers=dict(self.qualifiers.items()))
-
+                       component=component or feature.component,
+                       type=feature.type,
+                       location_operator=feature.location_operator,
+                       id=feature.id,
+                       qualifiers=dict(feature.qualifiers.items()))
         # TODO refs?
 
-    def _move(self, start, end):
-        # TODO ref
-        new_location = FeatureLocation(start, end, strand=self.location.strand)
-        return self._move_to_location(new_location)
-
-    def _shift(self, offset, component=None):
-        return self._move_to_location(self.location._shift(offset), component)
+    @classmethod
+    def translate(cls, feature, offset, component=None):
+        return Feature(location=feature.location._shift(offset),
+                       component=component or feature.component,
+                       type=feature.type,
+                       location_operator=feature.location_operator,
+                       id=feature.id,
+                       qualifiers=dict(feature.qualifiers.items()))
 
     @property
     def seq(self):
@@ -214,6 +215,75 @@ class Feature(SeqFeature):
         return False
 
 
+class FeatureProxy(object):
+
+    def __init__(self, feature, component):
+        self._component = component
+
+        if isinstance(feature, FeatureProxy):
+            self._feature = feature.feature
+        else:
+            self._feature = feature
+
+        if self._feature.component == component:
+            self.location = feature.location
+        else:
+            self.location = self._translate_location(feature, component)
+
+    def __getattr__(self, item):
+        return getattr(self.feature, item)
+
+    def __lt__(self, other):
+        if self.start < other.start:
+            return True
+        if self.start > other.start:
+            return False
+        if self.end < other.end:
+            return True
+        return False
+
+    def __gt__(self, other):
+        if self.start > other.start:
+            return True
+        if self.start < other.start:
+            return False
+        if self.end > other.end:
+            return True
+        return False
+
+    def __repr__(self):
+        return 'Proxy({})/{}'.format(self.location, repr(self._feature))
+
+    @staticmethod
+    def _translate_location(feature, component, tt=None):
+        if tt is None:
+            tt = component.tt(feature.component)
+
+        offset = tt[feature.location.start] - feature.location.start
+        return feature.location._shift(offset)
+
+    @property
+    def feature(self):
+        return self._feature
+
+    @property
+    def origin(self):
+        return self._feature.component
+
+    @property
+    def component(self):
+        return self._component
+
+    @property
+    def start(self):
+        return self.location.start
+
+    @property
+    def end(self):
+        return self.location.end
+
+
+
 class ComponentFeatureSet(FeatureSet):
     """
     An extended version of :class:`FeatureSet` that binds to a :class:`Component` and inherits from any
@@ -240,8 +310,8 @@ class ComponentFeatureSet(FeatureSet):
     def __iter__(self):
         if self.parent_feature_set:  # NOTE: this is where caching should kick in on any inherited implementation.
             keep_features = (f for f in self.parent_feature_set if f not in self.removed_features)
-            translated_features = (self.component._translate_feature(f, self.component) for f in keep_features)
-            return heapq.merge({f.data for f in self._features}, translated_features)
+            translated_features = (FeatureProxy(f, self.component) for f in keep_features)
+            return heapq.merge(sorted(f.data for f in self._features), sorted(translated_features))
         else:
             return super(ComponentFeatureSet, self).__iter__()
 
@@ -278,7 +348,7 @@ class ComponentFeatureSet(FeatureSet):
 
     def overlap(self, start, end, include_inherited=True):
         """
-        Returns an iterator over all features in the collection that overlap the given range.
+        Returns a set of all features in the collection that overlap the given range.
 
         :param int start: overlap region start
         :param int end: overlap region end

@@ -128,6 +128,42 @@ class ComponentTestCase(unittest.TestCase):
                           Feature(new_slogan, FeatureLocation(10, 20))], list(new_slogan.features))
         self.assertEqual(['Co', 'components'], [str(f.seq) for f in new_slogan.features])
 
+    def test_mutate_inherit_feature_twice(self):
+
+        source = Component('potatoapplecarrot', features=[
+                         SeqFeature(FeatureLocation(6, 11), type='fruit'),
+                         SeqFeature(FeatureLocation(11, 17), type='vegetable')])
+
+        self.assertEqual(Seq('apple'), next(iter(source.features)).seq)
+        c2 = source.mutate([DEL(7, 2)])
+
+        self.assertEqual('potatoalecarrot', str(c2.seq))
+        self.assertEqual({Seq('ale'), Seq('carrot')}, {f.seq for f in c2.features})
+
+        c3 = c2.mutate([INS(7, 'pp'), INS(6, 'pine')])
+
+        self.assertEqual('potatopineapplecarrot', str(c3.seq))
+        self.assertEqual({Seq('apple'), Seq('carrot')}, {f.seq for f in c3.features})
+        self.assertEqual({Seq('apple'), Seq('carrot')}, {c3.seq[f.start:f.end] for f in c3.features})
+
+
+    # FIXME this test fails:
+    @unittest.SkipTest
+    def test_inherit_feature_shift(self):
+        source = Component('12345aaaaa67890', features=[
+                         SeqFeature(FeatureLocation(5, 10), type='foo')])
+
+        self.assertEqual(Seq('aaaaa'), next(iter(source.features)).seq)
+
+        c2 = source.mutate([INS(1, 'XXX')])
+        self.assertEqual(Seq('aaaaa'), next(iter(c2.features)).seq)
+        self.assertEqual({Seq('aaaaa')}, {c2.seq[f.start:f.end] for f in c2.features})
+
+        c3 = c2.mutate([])
+        print(c2.features)
+        print(c3.features) # why is this empty?
+        self.assertEqual(Seq('aaaaa'), next(iter(c3.features)).seq)
+        self.assertEqual({Seq('aaaaa')}, {c3.seq[f.start:f.end] for f in c3.features})
 
     @unittest.SkipTest
     def test_mutate_break_source(self):
