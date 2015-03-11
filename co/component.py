@@ -202,7 +202,7 @@ class Component(object):
         if transform is None:
             transform = Feature.transform
 
-        component = Component(seq=self._seq, parent=self)  # TODO use __new__ instead
+        component = Component(seq=self._seq, parent=self, feature_class=self.features._feature_class)  # TODO use __new__ instead
         features = component.features
 
         tt = MutableTranslationTable(size=len(self._seq))
