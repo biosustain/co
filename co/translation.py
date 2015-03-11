@@ -489,6 +489,16 @@ class MutableTranslationTable(TranslationTable):
         self._insert_gap(position, size, size, strict)
 
 
+class TranslationTableChain(object):
+    def __init__(self, tables):
+        self.tables = tuple(tables)
+
+    def __getitem__(self, position):
+        for table in reversed(self.tables):
+            position = table[position]
+        return position
+
+
 def shift_feature_location(tt, location):
     offset = tt[location.start] - location.start
     return location._shift(offset)

@@ -12,7 +12,7 @@ import six
 
 from co.difference import Diff
 from co.feature import Feature, ComponentFeatureSet
-from co.translation import OverlapError, MutableTranslationTable, shift_feature_location
+from co.translation import OverlapError, MutableTranslationTable, shift_feature_location, TranslationTableChain
 
 
 # logging.basicConfig(level=logging.DEBUG)
@@ -121,7 +121,14 @@ class Component(object):
     def tt(self, ancestor=None):
         if ancestor in (None, self._parent):
             return self._mutations_tt
-        raise KeyError("Translation table from {} to {} cannot be accessed.".format(repr(self), repr(ancestor)))
+
+        try:
+            ancestors = list(self.get_lineage())
+            i = ancestors.index(ancestor)
+            ancestors = [self] + ancestors[:i]
+            return TranslationTableChain(a.tt() for a in ancestors)
+        except ValueError:
+            raise KeyError("Translation table from {} to {} cannot be accessed.".format(repr(self), repr(ancestor)))
 
     @classmethod
     def combine(cls, *components, **kwargs):
@@ -158,25 +165,9 @@ class Component(object):
 
         return combined
 
-
     @property
     def parent(self):
         return self._parent
-
-    # @staticmethod
-    # def _translate_feature(feature, component, tt=None):
-    #     if tt is None:
-    #         tt = component.tt(feature.component)
-    #     #
-    #     # logging.debug('TRANSLATE   {}'.format(feature))
-    #     # logging.debug('TRANSLATE T  {}'.format(list(enumerate(tt))))
-    #
-    #     offset = tt[feature.location.start] - feature.location.start
-    #
-    #     # FIXME does not include ref and ref_db!
-    #     # TODO create a "broken reference" object and re-attach here
-    #     return feature._shift(offset, component)
-
 
     def mutate(self, mutations, strict=True, transform=None):
         """
@@ -201,6 +192,7 @@ class Component(object):
         """
         if transform is None:
             transform = Feature.transform
+
 
         component = Component(seq=self._seq, parent=self, feature_class=self.features._feature_class)  # TODO use __new__ instead
         features = component.features
