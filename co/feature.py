@@ -228,12 +228,12 @@ class Feature(SeqFeature):
 class FeatureProxy(object):
 
     def __init__(self, feature, component):
+        self._component = component
+
         if isinstance(feature, FeatureProxy):
             self._feature = feature.feature
-            self._component = feature.origin
         else:
             self._feature = feature
-            self._component = component
 
         if self._feature.component == component:
             self.location = feature.location
@@ -261,6 +261,9 @@ class FeatureProxy(object):
             return True
         return False
 
+    def __repr__(self):
+        return 'Proxy({})/{}'.format(self.location, repr(self._feature))
+
     @staticmethod
     def _translate_location(feature, component, tt=None):
         if tt is None:
@@ -276,6 +279,10 @@ class FeatureProxy(object):
     @property
     def origin(self):
         return self._feature.component
+
+    @property
+    def component(self):
+        return self._component
 
     @property
     def start(self):
