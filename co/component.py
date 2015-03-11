@@ -262,20 +262,21 @@ class Component(object):
             logging.info('features in mutation: {}'.format(affected_features))
 
             for interval in itertools.chain(
-                    changed_features.search(mutation.start, mutation.end + 1), # process these first, as we are adding to changed features in second step
+                    changed_features.search(mutation.start, mutation.end + 1),
                     affected_features):
-                assert not (interval.end < mutation.start or interval.start > mutation.end)
+                # assert not (interval.end < mutation.start or interval.start > mutation.end)
 
                 # TODO move this into a previous loop:
                 try:
                     changed_features.remove(interval)
                     feature = interval.data
+                    feature_start = interval.begin
+                    feature_end = interval.end
                 except ValueError:
                     feature = interval
                     features.remove(feature)
-
-                feature_start = interval.start
-                feature_end = interval.end
+                    feature_start = feature.start
+                    feature_end = feature.end
 
                 if mutation.start > feature_start:
                     if mutation.end < feature_end or mutation.size == 0:  # mutation properly contained in feature.
