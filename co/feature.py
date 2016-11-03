@@ -1,7 +1,10 @@
 import weakref
 import heapq
 import logging
-from Bio.SeqFeature import SeqFeature, FeatureLocation
+from functools import partial
+from operator import is_not
+
+from Bio.SeqFeature import SeqFeature, FeatureLocation, CompoundLocation
 import sys
 
 from intervaltree import IntervalTree, Interval
@@ -126,6 +129,34 @@ class FeatureSet(object):
         return fs
 
 
+def mutate_feature_location(location, mutation):
+    if location.end < mutation.start:
+        return location
+
+    if location.start > mutation.end:
+        return location._shift(mutation.new_size - mutation.size)
+
+    if mutation.start > location.start:
+        if mutation.end < location.end - 1 or mutation.size == 0:
+            # LsMsMeLe (mutation properly contained in location)
+            return FeatureLocation(location.start,
+                                   location.end - mutation.size + mutation.new_size,
+                                   strand=location.strand)
+        else:
+            # LsMsLeMe (cut off beginning of location)
+            return FeatureLocation(location.start,
+                                   mutation.start,
+                                   strand=location.strand)
+    else:
+        if mutation.end < location.end - 1:
+            # MsLsMeLe (cut off end of feature)
+            return FeatureLocation(location.end + 1,
+                                   mutation.start,
+                                   strand=location.strand)
+        else:
+            return None  # location removed and not replaced.
+
+
 class Feature(SeqFeature):
     """
     :class:`Feature` derives from :class:`SeqFeature` and binds to a particular
@@ -165,9 +196,16 @@ class Feature(SeqFeature):
 
         # TODO refs?
 
-    def _move(self, start, end):
+    def _move(self, start, end, mutation):
         # TODO ref
-        new_location = FeatureLocation(start, end, strand=self.location.strand)
+        if isinstance(self.location, CompoundLocation):
+            new_location = CompoundLocation([part for part in
+                                             (mutate_feature_location(part, mutation)
+                                              for part in self.location.parts) if part is not None],
+                                            operator=self.location.operator)
+        else:
+            new_location = FeatureLocation(start, end, strand=self.location.strand)
+
         return self._move_to_location(new_location)
 
     def _shift(self, offset, component=None):

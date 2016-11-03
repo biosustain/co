@@ -273,19 +273,19 @@ class Component(object):
                             feature.end - mutation.size + mutation.new_size))
 
                         changed_features.add(feature._move(feature.start,
-                                                           feature.end - mutation.size + mutation.new_size))
+                                                           feature.end - mutation.size + mutation.new_size, mutation))
                     else:
                         logging.debug('FMFM from {} to {}'.format(
                             tt[feature.start],
                             tt[mutation.start - 1]))  # tt[mutation.start] ?
 
-                        changed_features.add(feature._move(feature.start, mutation.start))
+                        changed_features.add(feature._move(feature.start, mutation.start, mutation))
                 else:  # mutation.start >= feature.start
 
                     if mutation.end < feature.end - 1:
                         logging.debug('MFMF from {} to {}'.format(tt[mutation.end + 1], tt[feature.end]))
 
-                        changed_features.add(feature._move(mutation.end + 1, feature.end))
+                        changed_features.add(feature._move(mutation.end + 1, feature.end, mutation))
                     else:
                         pass  # feature removed and not replaced.
                         logging.debug('MFFM feature removed')
