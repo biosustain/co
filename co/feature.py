@@ -150,8 +150,8 @@ def mutate_feature_location(location, mutation):
     else:
         if mutation.end < location.end - 1:
             # MsLsMeLe (cut off end of feature)
-            return FeatureLocation(location.end + 1,
-                                   mutation.start,
+            return FeatureLocation(mutation.end + 1,
+                                   location.end,
                                    strand=location.strand)
         else:
             return None  # location removed and not replaced.
