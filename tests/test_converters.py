@@ -21,13 +21,13 @@ class GenbankConverterTestCase(unittest.TestCase):
 
         self.assertEqual(
             Counter(
-                {'minus_35_signal': 5,
-                 'minus_10_signal': 5,
+                {'-35_signal': 5,
+                 '-10_signal': 5,
                  'CDS': 3,
-                 'RNA': 2,
+                 'misc_RNA': 2,
                  'RBS': 2,
-                 'origin_of_replication': 1,
-                 'signal_peptide': 1}),
+                 'rep_origin': 1,
+                 'sig_peptide': 1}),
             Counter(feature.type for feature in component.features)
         )
 
@@ -46,7 +46,7 @@ class GenbankConverterTestCase(unittest.TestCase):
                               id='Magic_Brick',
                               annotations={'accession': 'MB1'})
 
-        component.features.add(FeatureLocation(3, 7), type='minus_10_signal')
+        component.features.add(FeatureLocation(3, 7), type='-10_signal')
         component.features.add(FeatureLocation(7, 9), id='GA', type='CDS', qualifiers={'locus_id': 'b0001'})
 
         # GenbankConverter.to_file(component, 'fixtures/MB_1.gb', 'Magic_Brick')
