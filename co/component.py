@@ -2,7 +2,6 @@
 from functools import reduce
 import logging
 
-from Bio import Alphabet
 from Bio.Seq import Seq
 import operator
 from Bio.SeqFeature import FeatureLocation, SeqFeature
