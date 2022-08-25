@@ -115,7 +115,7 @@ class FeatureSet(object):
         if start > end:
             raise RuntimeError("start cannot be larger than end.")
 
-        for f in sorted(self._features.search(start, end + 1)):
+        for f in sorted(self._features.overlap(start, end + 1)):
             yield f.data
 
     def difference(self, other):
